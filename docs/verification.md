@@ -27,7 +27,7 @@ Stand: 8. September 2026. Dieses Dokument trennt Implementierung von tatsächlic
 
 Die öffentliche Supabase-URL und der Publishable Key sind lokal eingerichtet. Supabase-Service-Role-Key sowie fal-/Trigger-/Stripe-Backendzugänge fehlen. Migrationen wurden nicht auf das eigene Supabase-Projekt angewendet. Auth-Mailversand, echte RLS-/Storage-Integration, Provider-Callbacks, reale Trainings-/Generierungsresultate, Trigger-Deployment und Zahlungen sind deshalb **nicht live bestätigt**. Keine bezahlten Modellaufrufe oder echten Zahlungen ausgeführt.
 
-Die Umgebung hat keinen verwendbaren nativen PostgreSQL-Dienst. PGlite führt echte SQL-Funktionen aus, serialisiert aber Verbindungen intern; es ist kein Beleg für konkurrierende Serververbindungen. `npm run test:postgres` und der CI-PostgreSQL-Job sind für drei unabhängige Verbindungen einschliesslich zwölf Payment-/Refund-Rennen, paralleler Upload-Speicherreservierungen und doppelter Fertigmeldungen eingerichtet, hier aber nicht ausgeführt.
+Die lokale Umgebung hat keinen verwendbaren nativen PostgreSQL-Dienst. PGlite führt echte SQL-Funktionen aus, serialisiert aber Verbindungen intern; es ist kein Beleg für konkurrierende Serververbindungen. Nach Korrektur des Testeinstiegs bestand `npm run test:postgres` am 8. September in GitHub Actions mit PostgreSQL 17 und drei unabhängigen Verbindungen: zwölf Payment-/Refund-Rennen, parallele Credit- und Upload-Speicherreservierungen, doppelte Abrechnung/Fertigmeldungen und globale Budgets. Das belegt die getesteten Datenbankabläufe im CI-Testschema; Supabase Auth und Storage müssen weiterhin im Zielprojekt geprüft werden.
 
 Playwright enthält Desktop- und Mobilprüfungen aller Kernseiten und des Angebotsablaufs. Im ersten GitHub-CI-Lauf am 8. September bestanden alle vier Tests auf Desktop Chromium und im emulierten iPhone-13-Layout. Das ersetzt keinen Test auf einem echten iPhone und bestätigt nur den expliziten Demo-Ablauf. Supabase CLI und Live-Migrationen wurden weiterhin nicht ausgeführt. Es gibt noch keine erfolgreich freigegebene öffentliche Produktion.
 
@@ -37,7 +37,11 @@ Playwright enthält Desktop- und Mobilprüfungen aller Kernseiten und des Angebo
 
 - `quality`: erfolgreich, einschliesslich Installation, Audit, Typprüfung, Linting, Worker-Werkzeugen, Tests und Produktionsbuild.
 - `browser`: erfolgreich; vier Desktop-/Mobiltests in 34,1 Sekunden. Kernseiten, beibehaltene Charakterauswahl und Preisbestätigung vor dem simulierten Ergebnis wurden geprüft.
-- `postgres`: fehlgeschlagen, bevor Datenbanktests liefen. `tsx` interpretierte die Datei als CommonJS, während der Testeinstieg Top-Level-`await` verwendete. Der Einstieg ist jetzt in eine asynchrone `main()`-Funktion mit Fehlerbehandlung eingeschlossen; die fachlichen Assertions bleiben erhalten. Der lokale CommonJS-Transform mit dem installierten esbuild ist erfolgreich. Die lokale `tsx`-CLI-Prüfung war wegen eines gesperrten IPC-Sockets nicht möglich; der tatsächliche Datenbanklauf muss deshalb erneut in CI bestätigt werden.
+- `postgres`: fehlgeschlagen, bevor Datenbanktests liefen. `tsx` interpretierte die Datei als CommonJS, während der Testeinstieg Top-Level-`await` verwendete. Der Einstieg ist jetzt in eine asynchrone `main()`-Funktion mit Fehlerbehandlung eingeschlossen; die fachlichen Assertions bleiben erhalten. Der lokale CommonJS-Transform mit dem installierten esbuild ist erfolgreich. Die lokale `tsx`-CLI-Prüfung war wegen eines gesperrten IPC-Sockets nicht möglich; der erfolgreiche Wiederholungslauf ist unten belegt.
+
+## Erfolgreicher vollständiger GitHub-CI-Lauf
+
+[Lauf 34266257916](https://github.com/Chrikl20/Chriklfield/actions/runs/34266257916) auf Commit `31e35b15a54d2acc54a7740c519bac702d17290d` ist mit **success** abgeschlossen. Alle drei Jobs bestanden: `quality` (Installation, Audit, Typprüfung, Linting, Worker-Werkzeuge, Tests und Produktionsbuild), `postgres` (echte parallele PostgreSQL-Verbindungen) und `browser` (Desktop-/Mobil-Demo). Der letzte Nachtrag ändert nur Dokumentation. Aktuelle Folgeläufe und der jeweilige Commit sind im [Draft PR #1](https://github.com/Chrikl20/Chriklfield/pull/1) sichtbar. Keine Prüfung hat bezahlte Modellaufrufe, echte Zahlungen oder Live-Datenbankmigrationen ausgeführt.
 
 ## Tatsächlicher Vercel-Versuch am 7. September
 
@@ -60,7 +64,7 @@ Die anschliessende gebündelte Seiten-/Browser-/Logprüfung hing und wurde abgeb
 
 ## Konkrete nächste Aufgaben vor öffentlichem Betrieb
 
-1. Den korrigierten PostgreSQL-Test in CI bestätigen. Staging-Konten/Secrets, vier Migrationen, sechs Trigger-Tasks, SMTP und HTTPS-Callback einrichten; zwei echte Nutzer gegeneinander prüfen. Die Supabase-Verbindung wurde als nächster Einrichtungsschritt angeboten; ihre Installation bei GitHub allein stellt dieser Arbeitsumgebung noch keinen Supabase-Zugriff bereit.
+1. Staging-Konten/Secrets, vier Migrationen, sechs Trigger-Tasks, SMTP und HTTPS-Callback einrichten; zwei echte Nutzer gegeneinander prüfen. Die Supabase-Verbindung wurde als nächster Einrichtungsschritt angeboten; ihre Installation bei GitHub allein stellt dieser Arbeitsumgebung noch keinen Supabase-Zugriff bereit.
 2. Kontobezogene fal-Preisformeln freigeben; nach ausdrücklicher Kostenfreigabe je einen kleinen Trainings-, Bild-, Edit-, I2V- und Motion-Test durchführen. Dateien, Webhook-/Polling-Recovery und Rechnungsbeträge abgleichen.
 3. Stripe-Test-Checkout, Abo-Verlängerung, Teil-/Vollrefund im Zielprojekt prüfen; Dispute-/Chargeback-Prozess ergänzen. Keine Live-Credits aus Testevent-Fakes.
 4. Externen Alarmkanal, Storage-Inventarabgleich, Anbieter-/Auth-Kontolöschung und Backup-Restore-Prozess vervollständigen. Nutzungs-/Datenschutz-/Modellbedingungen klären.
