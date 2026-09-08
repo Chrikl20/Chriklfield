@@ -1,0 +1,23 @@
+[
+  {
+    "file": "coast.jpg",
+    "author": "Griffin Wooldridge",
+    "source": "https://unsplash.com/photos/MZTmBPpyyF8",
+    "image": "https://images.unsplash.com/photo-1651103324862-b5003ba7ae34",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "file": "city.jpg",
+    "author": "Uran Wang",
+    "source": "https://unsplash.com/photos/a-person-standing-in-front-of-a-tall-building-emX20ri3RUc",
+    "image": "https://images.unsplash.com/photo-1687365414212-a0cb0a549b8f",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "file": "interior.jpg",
+    "author": "JC Bonassin",
+    "source": "https://unsplash.com/photos/green-potted-plant-on-white-table-qzzni6tk2r0",
+    "image": "https://images.unsplash.com/photo-1620321716083-b779ef3e63e3",
+    "license": "https://unsplash.com/license"
+  }
+]
