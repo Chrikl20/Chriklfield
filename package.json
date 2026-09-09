@@ -1,0 +1,68 @@
+{
+  "name": "chriklfield",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "demo": "cross-env APP_MODE=demo node scripts/dev.mjs",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:postgres": "tsx scripts/test-postgres.ts",
+    "worker:dev": "trigger dev",
+    "worker:deploy": "trigger deploy",
+    "check": "npm run typecheck && npm run lint && npm run test:toolchain && npm test && npm run build",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:toolchain": "node scripts/check-toolchain.mjs"
+  },
+  "dependencies": {
+    "@fal-ai/client": "1.10.1",
+    "@supabase/ssr": "0.12.6",
+    "@supabase/supabase-js": "2.115.0",
+    "@trigger.dev/sdk": "4.5.16",
+    "fflate": "0.8.3",
+    "lucide-react": "1.41.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "sharp": "0.35.4",
+    "stripe": "22.6.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.1",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "cross-env": "10.1.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
+    "pg": "8.23.0",
+    "prettier": "3.9.6",
+    "tailwindcss": "4.3.3",
+    "trigger.dev": "4.5.16",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vitest": "5.0.0",
+    "@trigger.dev/build": "4.5.16"
+  },
+  "overrides": {
+    "@opentelemetry/core": "2.8.0",
+    "ws": "8.21.0",
+    "deepmerge-ts": "8.0.2",
+    "tar": "7.5.22",
+    "esbuild": "0.28.2"
+  }
+}

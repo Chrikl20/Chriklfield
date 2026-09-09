@@ -1,0 +1,13 @@
+node_modules
+.next
+.demo
+.git
+.vercel
+.env*
+next-env.d.ts
+public/demo
+package-lock.json
+supabase/migrations/*.sql
+coverage
+playwright-report
+test-results
