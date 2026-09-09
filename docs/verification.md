@@ -1,6 +1,6 @@
 # Liefer- und Prüfstand
 
-Stand: 8. September 2026. Dieses Dokument trennt Implementierung von tatsächlich ausgeführten Prüfungen. Nach Installation des ChatGPT Codex Connectors gelang die GitHub-Übergabe: alle 112 Dateien wurden anhand ihrer Git-Blob-Prüfsummen mit dem lokalen Stand verglichen und mit Commit `b526d7168e5e19d5ea3be8a15b1ce4a921defce2` auf `feat/vercel-uploads` veröffentlicht. [Draft PR #1](https://github.com/Chrikl20/Chriklfield/pull/1) ist offen. `main` enthält weiterhin nur den Grundstand; es wurde nichts gemergt.
+Stand: 9. September 2026. Dieses Dokument trennt Implementierung von tatsächlich ausgeführten Prüfungen. Nach Installation des ChatGPT Codex Connectors gelang die GitHub-Übergabe: alle 112 Dateien wurden anhand ihrer Git-Blob-Prüfsummen mit dem lokalen Stand verglichen und mit Commit `b526d7168e5e19d5ea3be8a15b1ce4a921defce2` auf `feat/vercel-uploads` veröffentlicht. [Draft PR #1](https://github.com/Chrikl20/Chriklfield/pull/1) ist offen. `main` enthält weiterhin nur den Grundstand; es wurde nichts gemergt.
 
 | Umfang                                                   | Stand                                                                     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -25,11 +25,11 @@ Stand: 8. September 2026. Dieses Dokument trennt Implementierung von tatsächlic
 
 ## Noch getrennt zu verifizieren
 
-Die öffentliche Supabase-URL und der Publishable Key sind lokal eingerichtet. Supabase-Service-Role-Key sowie fal-/Trigger-/Stripe-Backendzugänge fehlen. Migrationen wurden nicht auf das eigene Supabase-Projekt angewendet. Auth-Mailversand, echte RLS-/Storage-Integration, Provider-Callbacks, reale Trainings-/Generierungsresultate, Trigger-Deployment und Zahlungen sind deshalb **nicht live bestätigt**. Keine bezahlten Modellaufrufe oder echten Zahlungen ausgeführt.
+Die öffentliche Supabase-URL und der Publishable Key sind lokal eingerichtet. Supabase-Service-Role-Key sowie fal-/Trigger-/Stripe-Backendzugänge fehlen. Alle fünf Migrationen sind seit 9. September im Zielprojekt angewendet; Rollen-/RLS-Prüfungen sind unten belegt. Auth-Mailversand, tatsächliche JWT-/Storage-HTTP-Zugriffe, Provider-Callbacks, reale Trainings-/Generierungsresultate, Trigger-Deployment und Zahlungen sind deshalb **nicht live bestätigt**. Keine bezahlten Modellaufrufe oder echten Zahlungen ausgeführt.
 
 Die lokale Umgebung hat keinen verwendbaren nativen PostgreSQL-Dienst. PGlite führt echte SQL-Funktionen aus, serialisiert aber Verbindungen intern; es ist kein Beleg für konkurrierende Serververbindungen. Nach Korrektur des Testeinstiegs bestand `npm run test:postgres` am 8. September in GitHub Actions mit PostgreSQL 17 und drei unabhängigen Verbindungen: zwölf Payment-/Refund-Rennen, parallele Credit- und Upload-Speicherreservierungen, doppelte Abrechnung/Fertigmeldungen und globale Budgets. Das belegt die getesteten Datenbankabläufe im CI-Testschema; Supabase Auth und Storage müssen weiterhin im Zielprojekt geprüft werden.
 
-Playwright enthält Desktop- und Mobilprüfungen aller Kernseiten und des Angebotsablaufs. Im ersten GitHub-CI-Lauf am 8. September bestanden alle vier Tests auf Desktop Chromium und im emulierten iPhone-13-Layout. Das ersetzt keinen Test auf einem echten iPhone und bestätigt nur den expliziten Demo-Ablauf. Supabase CLI und Live-Migrationen wurden weiterhin nicht ausgeführt. Es gibt noch keine erfolgreich freigegebene öffentliche Produktion.
+Playwright enthält Desktop- und Mobilprüfungen aller Kernseiten und des Angebotsablaufs. Im ersten GitHub-CI-Lauf am 8. September bestanden alle vier Tests auf Desktop Chromium und im emulierten iPhone-13-Layout. Das ersetzt keinen Test auf einem echten iPhone und bestätigt nur den expliziten Demo-Ablauf. Die CLI wurde am 9. September zum Anlegen der ergänzenden Migration verwendet; die fünf Live-Migrationen wurden über die verbundene Supabase-Anwendung ausgeführt. Es gibt noch keine erfolgreich freigegebene öffentliche Produktion.
 
 ## Erster GitHub-CI-Lauf am 8. September
 
@@ -41,7 +41,7 @@ Playwright enthält Desktop- und Mobilprüfungen aller Kernseiten und des Angebo
 
 ## Erfolgreicher vollständiger GitHub-CI-Lauf
 
-[Lauf 34266257916](https://github.com/Chrikl20/Chriklfield/actions/runs/34266257916) auf Commit `31e35b15a54d2acc54a7740c519bac702d17290d` ist mit **success** abgeschlossen. Alle drei Jobs bestanden: `quality` (Installation, Audit, Typprüfung, Linting, Worker-Werkzeuge, Tests und Produktionsbuild), `postgres` (echte parallele PostgreSQL-Verbindungen) und `browser` (Desktop-/Mobil-Demo). Der letzte Nachtrag ändert nur Dokumentation. Aktuelle Folgeläufe und der jeweilige Commit sind im [Draft PR #1](https://github.com/Chrikl20/Chriklfield/pull/1) sichtbar. Keine Prüfung hat bezahlte Modellaufrufe, echte Zahlungen oder Live-Datenbankmigrationen ausgeführt.
+[Lauf 34266257916](https://github.com/Chrikl20/Chriklfield/actions/runs/34266257916) auf Commit `31e35b15a54d2acc54a7740c519bac702d17290d` ist mit **success** abgeschlossen. Alle drei Jobs bestanden: `quality` (Installation, Audit, Typprüfung, Linting, Worker-Werkzeuge, Tests und Produktionsbuild), `postgres` (echte parallele PostgreSQL-Verbindungen) und `browser` (Desktop-/Mobil-Demo). Dieser Lauf belegt den damaligen Quellstand. Aktuelle Folgeläufe und der jeweilige Commit sind im [Draft PR #1](https://github.com/Chrikl20/Chriklfield/pull/1) sichtbar. Keine Prüfung hat bezahlte Modellaufrufe, echte Zahlungen oder Live-Datenbankmigrationen ausgeführt.
 
 ## Tatsächlicher Vercel-Versuch am 7. September
 
@@ -60,11 +60,31 @@ Der korrigierte Quellstand `bb8fca9b87d81e89f9e8b7c9c33a9f53f8d78122` wurde erne
 - Vorschau: <https://chriklfield-k3bt7m4b7-chrikl.vercel.app/login>.
 - Build-Ansicht: <https://vercel.com/chrikl/chriklfield/EZPEuBpQFKgUU2nQo3HVbB3FiQDq>.
 
-Die anschliessende gebündelte Seiten-/Browser-/Logprüfung hing und wurde abgebrochen; daraus liegen keine verwertbaren Einzelresultate vor. `READY` bestätigt den Cloud-Build, nicht Login, E-Mail-Versand, Datenbank oder Medien-Workflow. Der Zugriffsschutz wurde nicht abgeschaltet. Backend-Zugangsdaten und Live-Migrationen fehlen weiterhin.
+Die anschliessende gebündelte Seiten-/Browser-/Logprüfung hing und wurde abgebrochen; daraus liegen keine verwertbaren Einzelresultate vor. `READY` bestätigt den Cloud-Build, nicht Login, E-Mail-Versand, Datenbank oder Medien-Workflow. Der Zugriffsschutz wurde nicht abgeschaltet. Dieser Preview wurde ohne Backend-Zugangsdaten gebaut. Die Datenbankmigrationen sind inzwischen angewendet; der vollständige Login-/Upload-Ablauf bleibt separat zu prüfen.
+
+## Supabase tatsächlich eingerichtet am 9. September
+
+Projekt `tslgkbtfdchkfriuealv` war `ACTIVE_HEALTHY` (PostgreSQL 17.6). Vor der Einrichtung: keine Anwendungstabellen, keine Buckets, keine Migrationen und ein vorhandener Auth-Nutzer. Dieser Nutzer wurde erhalten. Vier bereits in CI geprüfte Migrationen und eine lokal geprüfte ergänzende Rechtemigration wurden jeweils mit erfolgreicher Supabase-Antwort angewendet.
+
+- 23 Anwendungstabellen; auf allen ist RLS aktiv.
+- Drei private Buckets: `creator-private`, `creator-intake-images`, `creator-intake-videos`.
+- Keine Schreib-/TRUNCATE-/REFERENCES-/TRIGGER-Rechte für `anon` oder `authenticated` auf Anwendungstabellen. Explizite SELECT-Grants plus Mitgliedschafts-Policies bleiben bestehen.
+- Keine öffentlich oder für Browsernutzer ausführbare SECURITY-DEFINER-Funktion im API-Schema `public`. Die RLS-Hilfe liegt in `creator_private`, prüft die echte `auth.uid()` und hat einen leeren Suchpfad. Das interne Schema darf nicht als Data API-Schema exponiert werden.
+- Die vom Dashboard angelegte automatische RLS-Eventfunktion bleibt erhalten; ihre unnötigen Client-EXECUTE-Rechte wurden entfernt.
+- 26 vom Advisor gemeldete fehlende Fremdschlüsselindizes ergänzt. Nachkontrolle: keine fehlenden FK-Indizes mehr; nur 33 erwartete INFO-Meldungen über bislang ungenutzte Indizes einer leeren Anwendung.
+- `tests/supabase-rls.sql` wurde vollständig im echten Projekt ausgeführt: Eigentümerzugriff, Fremdnutzer-Ausschluss, private Storage-Metadaten, gesperrte Client-RPCs/TRUNCATE und Eigentumsprüfung im privilegierten Backend bestanden. Die zwei temporären Nutzer und alle Testdaten wurden in derselben Transaktion zurückgerollt. Eine separate Nachkontrolle bestätigte wieder einen Auth-Nutzer, null Workspaces, null Storage-Objekte und null Ledger-Einträge.
+- Zusätzlicher echter HTTP-Aufruf mit dem vorhandenen Publishable Key und dem installierten Supabase-SDK: SELECT auf private Charaktere wurde mit HTTP 401 / PostgreSQL-Code `42501` abgewiesen. Der Schlüssel ist gültig; die erwartete Zugriffsverweigerung ist wirksam.
+- Alle sechs Modelle bleiben deaktiviert. Keine Testcredits, kostenpflichtigen Generierungen oder Zahlungen angelegt.
+
+Der Security Advisor meldet noch zehn INFO-Hinweise „RLS enabled, no policy“ für absichtlich ausschliesslich serverseitige Tabellen ohne Client-Grants. Dafür werden keine pauschalen Policies ergänzt. Ein Auth-WARN bleibt: Schutz vor kompromittierten Passwörtern ist im Projekt deaktiviert. Die Anwendung nutzt aktuell E-Mail-Links; vor Freigabe einer Passwortanmeldung im Dashboard prüfen. [Advisor zu Tabellen ohne Policies](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [Passwortschutz](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), [ungenutzte Indizes](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
+
+Typprüfung, ESLint und alle 44 Vitest-Tests in sieben Dateien bestanden am 9. September nach der Ergänzung. Der erste Typprüfungslauf fand eine fehlende Ergebnistypangabe im neuen Regressionstest; diese wurde korrigiert und der gesamte Lauf wiederholt.
+
+Die Migrationen wurden lokal auf die tatsächlich von Supabase vergebenen Versionen umbenannt, ohne den SQL-Inhalt der ersten vier zu ändern. Lokale Tests laden alle SQL-Migrationen sortiert; die neue Regression simuliert die weitreichenden Supabase-Standardgrants und prüft ausdrücklich TRUNCATE. Ein MD5-Vergleich aller fünf SQL-Dateien mit den im Projekt gespeicherten Migrationen stimmt exakt überein. Keine Migration-History wurde manuell überschrieben. Details und Zuordnung: [supabase-setup.md](supabase-setup.md).
 
 ## Konkrete nächste Aufgaben vor öffentlichem Betrieb
 
-1. Staging-Konten/Secrets, vier Migrationen, sechs Trigger-Tasks, SMTP und HTTPS-Callback einrichten; zwei echte Nutzer gegeneinander prüfen. Die Supabase-Verbindung wurde als nächster Einrichtungsschritt angeboten; ihre Installation bei GitHub allein stellt dieser Arbeitsumgebung noch keinen Supabase-Zugriff bereit.
+1. Backend-Secrets in Vercel/Trigger, sechs Trigger-Tasks, SMTP und HTTPS-Callback einrichten; zwei echte Nutzer über Browser-JWTs und Storage-HTTP gegeneinander prüfen. Supabase ist verbunden, Schema und SQL-Zugriffsschutz sind eingerichtet. Konkrete Einrichtung: [supabase-setup.md](supabase-setup.md).
 2. Kontobezogene fal-Preisformeln freigeben; nach ausdrücklicher Kostenfreigabe je einen kleinen Trainings-, Bild-, Edit-, I2V- und Motion-Test durchführen. Dateien, Webhook-/Polling-Recovery und Rechnungsbeträge abgleichen.
 3. Stripe-Test-Checkout, Abo-Verlängerung, Teil-/Vollrefund im Zielprojekt prüfen; Dispute-/Chargeback-Prozess ergänzen. Keine Live-Credits aus Testevent-Fakes.
 4. Externen Alarmkanal, Storage-Inventarabgleich, Anbieter-/Auth-Kontolöschung und Backup-Restore-Prozess vervollständigen. Nutzungs-/Datenschutz-/Modellbedingungen klären.

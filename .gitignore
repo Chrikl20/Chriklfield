@@ -10,3 +10,6 @@ test-results/
 .demo/
 *.tsbuildinfo
 .DS_Store
+
+supabase/.temp/
+supabase/.branches/

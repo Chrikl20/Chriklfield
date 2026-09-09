@@ -10,6 +10,35 @@ afterEach(async () => {
   await db?.close();
 });
 describe('PostgreSQL migrations, tenancy and atomic accounting', () => {
+  it('removes inherited client privileges, including TRUNCATE which bypasses RLS', async () => {
+    const { rows } = await db.query<{ role: string; table: string }>(`
+      select r.role, c.relname as table from pg_class c
+      join pg_namespace n on n.oid=c.relnamespace
+      cross join (values ('anon'),('authenticated')) r(role)
+      where n.nspname='public' and c.relkind='r'
+        and has_table_privilege(r.role,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+    `);
+    expect(rows).toEqual([]);
+    for (const role of ['anon', 'authenticated']) {
+      await db.exec(`set role ${role}`);
+      await expect(db.exec('truncate public.templates')).rejects.toThrow(/permission denied/i);
+      await expect(db.query('select * from public.payments')).rejects.toThrow(/permission denied/i);
+      await db.exec('reset role');
+    }
+    expect((await db.query('select * from public.templates')).rows).toHaveLength(3);
+    expect(
+      (
+        await db.query<{ fn: string | null }>(
+          "select to_regprocedure('public.is_member(uuid)') as fn",
+        )
+      ).rows[0].fn,
+    ).toBeNull();
+    await db.exec('set role anon');
+    await expect(db.query('select creator_private.is_member($1)', [W1])).rejects.toThrow(
+      /permission denied/i,
+    );
+    await db.exec('reset role');
+  });
   it('isolates two users with RLS, including private storage rows and service RPC permissions', async () => {
     const id = randomUUID();
     await db.query('insert into characters(id,workspace_id,name)values($1,$2,$3)', [

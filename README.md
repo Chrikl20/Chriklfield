@@ -6,6 +6,8 @@ Next.js App Router, React, striktes TypeScript, Tailwind, Supabase Auth/PostgreS
 
 **Status: ausführbare Entwicklungsversion mit explizitem lokalem Demo-Modus.** Echte Modelladapter sind implementiert. Live-Generierungen, reale Zahlungen und öffentliche Produktion wurden nicht ausgeführt. Der konkrete Prüfstand steht in [docs/verification.md](docs/verification.md). Es gibt keine belegte Überlegenheit gegenüber anderen Plattformen.
 
+**Supabase ist eingerichtet (9. September):** fünf Migrationen, 23 Tabellen mit RLS und drei private Buckets. Die SQL-Prüfung zweier Nutzer bestand im Zielprojekt. Für die Vercel-Anmeldung fehlen noch die abschliessende Backend-/Auth-Konfiguration und der Browserdurchlauf. [Aktuelle Einrichtung und nächste Schritte](docs/supabase-setup.md).
+
 ## In drei Schritten lokal starten
 
 Voraussetzungen: Node.js **24 LTS**, npm, Git. Für Video-Uploads zusätzlich `ffmpeg` und `ffprobe` im PATH (z. B. `brew install ffmpeg` oder `apt-get install ffmpeg`).
