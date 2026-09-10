@@ -346,6 +346,7 @@ function StudioForm({ video }: { video: boolean }) {
               <label>
                 Format
                 <select
+                  aria-label="Format"
                   disabled={model === 'edit'}
                   value={format}
                   onChange={(e) => setFormat(e.target.value as JobInput['format'])}
@@ -357,7 +358,11 @@ function StudioForm({ video }: { video: boolean }) {
               </label>
               <label>
                 Varianten
-                <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
+                <select
+                  aria-label="Varianten"
+                  value={count}
+                  onChange={(e) => setCount(Number(e.target.value))}
+                >
                   {[1, 2, 3, 4].map((n) => (
                     <option key={n} value={n}>
                       {n} {n === 1 ? 'Bild' : 'Bilder'}
