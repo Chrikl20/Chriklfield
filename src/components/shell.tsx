@@ -31,7 +31,7 @@ export function Shell({ children }: { children: ReactNode }) {
     router = useRouter();
   const { data, selected, select, notice, error } = useStudio();
   const [open, setOpen] = useState(false);
-  if (path === '/login') return children;
+  if (path === '/login' || path === '/credits') return children;
   const active = nav.find((n) => n[0] === path)?.[1] || 'Admin';
   return (
     <div className="app-shell">
@@ -51,7 +51,7 @@ export function Shell({ children }: { children: ReactNode }) {
             c<span>f</span>
           </span>
           <span>
-            chriklfield<span className="brand-sub">CREATOR STUDIO</span>
+            chriklfield<span className="brand-sub">AI INFLUENCER STUDIO</span>
           </span>
         </Link>
         <div className="workspace-picker">
@@ -61,13 +61,14 @@ export function Shell({ children }: { children: ReactNode }) {
             <small>{data?.mode === 'demo' ? 'Demo-Workspace' : 'Privater Workspace'}</small>
           </span>
         </div>
-        <div className="nav-label">WORKSPACE</div>
+        <div className="nav-label">CREATE SOMETHING</div>
         <nav aria-label="Hauptnavigation">
           {nav.map(([href, label, Icon]) => (
             <Link
               key={href}
               href={href}
               className={path === href ? 'nav-item active' : 'nav-item'}
+              aria-current={path === href ? 'page' : undefined}
               onClick={() => setOpen(false)}
             >
               <Icon size={19} />
@@ -97,9 +98,6 @@ export function Shell({ children }: { children: ReactNode }) {
               {data ? (data.balance - data.reserved).toLocaleString('de-CH') : '—'}
               <small>{data?.plan || 'Free'}</small>
             </strong>
-            <div className="credit-track">
-              <span style={{ width: `${Math.min(100, (data?.balance || 0) / 30)}%` }} />
-            </div>
             <span className="muted">{data?.reserved || 0} reserviert</span>
           </Link>
           <div className="sidebar-foot">
@@ -134,7 +132,7 @@ export function Shell({ children }: { children: ReactNode }) {
             >
               <Menu size={22} />
             </button>
-            <span>Workspace</span>
+            <span>Creator Studio</span>
             <span className="slash">/</span>
             <strong>{active}</strong>
           </div>
@@ -163,7 +161,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="demo-banner">
             <span className="demo-dot" />
             <strong>Lokale Demo</strong>
-            <span>Testdaten & Szenenfotos. Keine KI-Generierung oder Zahlung.</span>
+            <span>Testdaten & Beispielfotos. Keine KI-Generierung oder Zahlung.</span>
           </div>
         )}
         <main id="workspace">

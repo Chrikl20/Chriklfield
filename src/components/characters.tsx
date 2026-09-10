@@ -50,9 +50,9 @@ export function Characters() {
   return (
     <div className="page">
       <PageTitle
-        eyebrow="IDENTITÄT ZUERST"
+        eyebrow="DEINE AI INFLUENCER"
         title="Deine Characters"
-        description="Referenzen und Versionen für eine wiedererkennbare Identität."
+        description="Entwickle deine Influencer. Bewahre ihre Identität über neue Looks, Posts und Clips hinweg."
         action={
           <button className="button primary" onClick={() => setEditing('new')}>
             <Plus size={17} />

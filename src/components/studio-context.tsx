@@ -90,7 +90,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     }
   }, [router]);
   useEffect(() => {
-    if (pathname !== '/login') {
+    if (pathname !== '/login' && pathname !== '/credits') {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize the session with the external API.
       void refresh();
       const timer = setInterval(() => void refresh(), 5000);
