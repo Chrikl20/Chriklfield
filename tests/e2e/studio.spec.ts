@@ -3,7 +3,7 @@ test('core pages remain usable on desktop and mobile', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   for (const [path, title] of [
-    ['explore', 'Was erschaffst du heute?'],
+    ['explore', 'Dein nächster Content.'],
     ['characters', 'Deine Characters'],
     ['image', 'Image Studio'],
     ['video', 'Video Studio'],
@@ -19,6 +19,45 @@ test('core pages remain usable on desktop and mobile', async ({ page }) => {
     ).toBe(true);
   }
   expect(errors).toEqual([]);
+});
+test('a creator preset carries editable content into the studio without starting a job', async ({
+  page,
+}) => {
+  await page.goto('/explore');
+  await page.getByRole('button', { name: 'Fashion', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Fashion', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(
+    page.getByRole('link', { name: 'Coffee & catch-up – Vorlage öffnen', exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole('link', { name: 'Today’s fit – Vorlage öffnen', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Image Studio', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Szene', { exact: true })).toHaveValue(
+    'City steps in soft daylight',
+  );
+  await expect(page.getByLabel('Outfit', { exact: true })).toHaveValue(/Sleeveless knit top/);
+  await expect(page.getByLabel('Format', { exact: true })).toHaveValue('9:16');
+  await expect(page.getByLabel('Aktiver Charakter')).toHaveValue(
+    '00000000-0000-4000-8000-000000000003',
+  );
+  await expect(page.getByRole('button', { name: 'Preis berechnen', exact: true })).toBeEnabled();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByLabel('Szene', { exact: true }).fill('A sunny park after a morning run');
+  await expect(page.getByLabel('Szene', { exact: true })).toHaveValue(
+    'A sunny park after a morning run',
+  );
+});
+test('login and photo credits are usable without a studio session', async ({ page }) => {
+  await page.goto('/login');
+  await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Anmeldelink senden' })).toBeVisible();
+  await page.getByRole('link', { name: 'Foto-Inspiration · Bildnachweise' }).click();
+  await expect(page.getByRole('heading', { name: 'Bildnachweise', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+  ).toBe(true);
 });
 test('character choice survives studio navigation; quote is confirmed before a simulated result', async ({
   page,

@@ -1,119 +1,238 @@
 'use client';
 import Link from 'next/link';
-import { ArrowUpRight, Plus, ImagePlus, Clapperboard, UsersRound, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import {
+  ArrowUpRight,
+  ArrowRight,
+  Plus,
+  Clapperboard,
+  ScanFace,
+  Images,
+  MoveUpRight,
+} from 'lucide-react';
 import { useState } from 'react';
+import { CREATOR_PRESETS } from '@/domain/creator-presets';
 import { useStudio } from './studio-context';
-import { Loading, PageTitle } from './ui';
+import { Loading } from './ui';
+
 export function Explore() {
-  const { data } = useStudio();
+  const { data, selected } = useStudio();
   const [category, setCategory] = useState('Alle');
   if (!data) return <Loading />;
-  const templates = data.templates.filter((t) => category === 'Alle' || t.category === category);
+  const presets = CREATOR_PRESETS.filter((p) => category === 'Alle' || p.category === category);
+  const character = data.characters.find((c) => c.id === selected);
+  const startImage = data.assets.find((a) => a.kind === 'image' && a.character_id === selected);
+
   return (
-    <div className="page explore">
-      <PageTitle
-        eyebrow="DEIN NÄCHSTES PROJEKT"
-        title="Was erschaffst du heute?"
-        description="Eine Identität. Neue Szenen. Deine Handschrift."
-        action={
-          <Link className="button primary" href="/characters">
-            <Plus size={17} />
-            Charakter erstellen
-          </Link>
-        }
-      />
-      <div className="quick-actions">
+    <div className="page creator-explore">
+      <div className="creator-heading">
+        <div>
+          <span className="eyebrow">CHRIKLFIELD / EXPLORE</span>
+          <h1>Dein nächster Content.</h1>
+        </div>
+        <Link className="button" href="/characters">
+          <Plus size={17} /> Charakter erstellen
+        </Link>
+      </div>
+      <section className="creator-features" aria-label="Dein Creator-Workflow">
+        <article className="creator-hero">
+          <div className="hero-portraits" aria-hidden="true">
+            <Image
+              src="/creator/style.webp"
+              alt=""
+              fill
+              sizes="(max-width: 720px) 80vw, 35vw"
+              loading="eager"
+              className="hero-style"
+            />
+            <Image
+              src="/creator/street.webp"
+              alt=""
+              fill
+              sizes="(max-width: 720px) 60vw, 25vw"
+              loading="eager"
+              className="hero-street"
+            />
+          </div>
+          <span className="inspiration-label">FOTO-INSPIRATION</span>
+          <div className="hero-content">
+            <span className="feature-kicker">
+              <ScanFace size={15} /> AI INFLUENCER
+            </span>
+            <h2>
+              Dein Charakter.
+              <br />
+              <em>Dein Feed.</em>
+            </h2>
+            <p>
+              Entwickle deine eigene Identität.
+              <br />
+              Erstelle die Looks, Posts und Clips dazu.
+            </p>
+            <Link className="button primary" href="/characters">
+              Charakter entwickeln <ArrowUpRight size={18} />
+            </Link>
+          </div>
+          <span className="hero-bottomline">IDENTITÄT → BILDER → VIDEOS</span>
+        </article>
+        <Link
+          className="creator-video-feature"
+          href={startImage ? `/video?source=${startImage.id}` : '/video'}
+        >
+          <Image
+            src="/creator/coffee.webp"
+            alt="Foto-Inspiration: ein persönlicher Café-Moment"
+            fill
+            sizes="(max-width: 720px) 100vw, 25vw"
+            loading="eager"
+          />
+          <span className="inspiration-label">FOTO-INSPIRATION</span>
+          <span className="feature-arrow">
+            <ArrowUpRight size={23} />
+          </span>
+          <div className="video-feature-copy">
+            <span className="feature-kicker">
+              <Clapperboard size={16} /> IMAGE TO VIDEO
+            </span>
+            <h2>
+              Bring deinen
+              <br />
+              Feed in Bewegung.
+            </h2>
+            <span className="feature-cta">
+              Bild animieren <ArrowRight size={17} />
+            </span>
+          </div>
+        </Link>
+      </section>
+      <div className="creator-shortcuts">
         <Link href="/characters">
-          <span className="action-icon">
-            <UsersRound />
+          <span className="shortcut-icon">
+            <ScanFace size={22} />
           </span>
           <div>
-            <strong>Dein Charakter</strong>
-            <span>Identität & Referenzen verwalten</span>
+            <strong>Deine Influencer</strong>
+            <small>Identität & Referenzen</small>
           </div>
-          <ArrowUpRight size={20} />
+          <ArrowUpRight size={18} />
         </Link>
         <Link href="/image">
-          <span className="action-icon">
-            <ImagePlus />
+          <span className="shortcut-icon">
+            <Images size={22} />
           </span>
           <div>
-            <strong>Bilder erstellen</strong>
-            <span>Aus einer Idee wird eine Szene</span>
+            <strong>Den nächsten Post erstellen</strong>
+            <small>Charakter, Outfit, Szene</small>
           </div>
-          <ArrowUpRight size={20} />
+          <ArrowUpRight size={18} />
         </Link>
         <Link href="/video">
-          <span className="action-icon">
-            <Clapperboard />
+          <span className="shortcut-icon">
+            <Clapperboard size={22} />
           </span>
           <div>
-            <strong>In Bewegung bringen</strong>
-            <span>Ein Bild wird zum Video</span>
+            <strong>Aus Bildern werden Clips</strong>
+            <small>Animation & Motion Control</small>
           </div>
-          <ArrowUpRight size={20} />
+          <ArrowUpRight size={18} />
         </Link>
       </div>
-      <div className="section-heading">
-        <div>
-          <h2>Die nächste Szene beginnt hier.</h2>
-          <p>Kuratierte Vorlagen für deinen Charakter.</p>
+      <section className="creator-preset-section" aria-labelledby="presets-title">
+        <div className="creator-section-heading">
+          <div>
+            <span className="eyebrow">PICK A VIBE</span>
+            <h2 id="presets-title">Ein Look. Dein nächster Post.</h2>
+            <p>Wähle eine Vorlage und mach sie zu deiner.</p>
+          </div>
+          <span className="preset-count">
+            {CREATOR_PRESETS.length} Content-Ideen <MoveUpRight size={17} />
+          </span>
         </div>
-        <span className="pill">{data.templates.length} Vorlagen</span>
-      </div>
-      <div className="tabs" aria-label="Vorlagenkategorie">
-        {['Alle', 'Lifestyle', 'Editorial', 'Portrait'].map((c) => (
-          <button
-            className={category === c ? 'selected' : ''}
-            key={c}
-            onClick={() => setCategory(c)}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-      <div className="template-grid">
-        {templates.map((t, i) => (
-          <Link
-            className={`template-card template-${t.id}`}
-            key={t.id}
-            href={`/image?template=${t.id}`}
-          >
-            <img
-              src={t.cover}
-              alt={`${t.title}: Szenenreferenz`}
-              loading={i > 1 ? 'lazy' : 'eager'}
-            />
-            <div className="template-shade" />
-            <span className="media-label">SZENENREFERENZ</span>
-            <span className="template-use">
-              <ArrowUpRight size={22} />
-            </span>
-            <div className="template-copy">
-              <span>
-                {t.category} <span>·</span> {t.format}
-              </span>
-              <h3>{t.title}</h3>
-              <p>
-                Mit deinem Charakter öffnen <ArrowRight size={15} />
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
-      <div className="workflow-note">
-        <div className="monogram">01—04</div>
-        <div>
-          <strong>Vom Charakter zum fertigen Clip.</strong>
-          <p>Referenzen bestätigen, LoRA trainieren, ein Bild auswählen und animieren.</p>
+        <div className="creator-filter-row">
+          <div className="creator-filters" aria-label="Vorlagenkategorie">
+            {['Alle', 'Fashion', 'Lifestyle', 'Beauty'].map((c) => (
+              <button
+                key={c}
+                aria-pressed={category === c}
+                className={category === c ? 'selected' : ''}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+          <span className="active-creator">
+            <span className="private-dot" />
+            {character ? `Mit ${character.name} erstellen` : 'Mit deinem Charakter erstellen'}
+          </span>
         </div>
-        <Link href="/characters">
-          Mit einer Identität anfangen <ArrowRight size={17} />
+        <div className="creator-preset-grid" aria-live="polite">
+          {presets.map((p) => (
+            <Link
+              className="creator-preset"
+              key={p.id}
+              href={`/image?preset=${p.id}`}
+              aria-label={`${p.title} – Vorlage öffnen`}
+            >
+              <div className="preset-image">
+                <Image
+                  src={p.cover}
+                  alt={`Foto-Inspiration für ${p.title}`}
+                  fill
+                  sizes="(max-width: 540px) 50vw, (max-width: 1100px) 30vw, 18vw"
+                />
+                <span className="preset-format">{p.format}</span>
+                <span className="preset-open">
+                  <ArrowUpRight size={21} />
+                </span>
+                <span className="preset-media-note">FOTO-INSPIRATION</span>
+              </div>
+              <div className="preset-caption">
+                <h3>{p.title}</h3>
+                <span>
+                  {p.category}
+                  <ArrowUpRight size={14} />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="creator-next-step">
+        <span className="next-step-icon">
+          <ScanFace size={28} />
+        </span>
+        <div>
+          <h2>Ein Charakter. Viele Möglichkeiten.</h2>
+          <p>Referenzen bestätigen, Identität trainieren und neue Looks ausprobieren.</p>
+        </div>
+        <Link className="button" href="/characters">
+          Zu deinen Characters <ArrowRight size={17} />
         </Link>
-      </div>
-      <p className="photo-credit">
-        Szenenfotos: Griffin Wooldridge, Uran Wang und JC Bonassin / Unsplash. Sie zeigen keine
-        Modellergebnisse.
+      </section>
+      {data.templates.length > 0 && (
+        <details className="workspace-templates">
+          <summary>
+            Weitere Studio-Vorlagen <span>{data.templates.length}</span>
+          </summary>
+          <div className="workspace-template-links">
+            {data.templates.map((t) => (
+              <Link key={t.id} href={`/image?template=${t.id}`}>
+                <span>
+                  <strong>{t.title}</strong>
+                  <small>
+                    {t.category} · {t.format}
+                  </small>
+                </span>
+                <ArrowUpRight size={18} />
+              </Link>
+            ))}
+          </div>
+        </details>
+      )}
+      <p className="creator-photo-note">
+        Die Fotos dienen als Inspiration. Sie zeigen keine generierten Charaktere oder garantierten
+        Ergebnisse. <Link href="/credits">Bildnachweise</Link>
       </p>
     </div>
   );

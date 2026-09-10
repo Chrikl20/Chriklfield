@@ -4,12 +4,13 @@ import { UploadStatusList } from './upload-status';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { CREATOR_PRESETS } from '@/domain/creator-presets';
 import {
   Sparkles,
   SlidersHorizontal,
   Upload,
   Film,
-  ImagePlus,
   ArrowUpRight,
   Download,
   Heart,
@@ -23,13 +24,16 @@ import { PageTitle, Loading, Status } from './ui';
 import { ReferenceForm } from './characters';
 export function GenerationStudio({ video = false }: { video?: boolean }) {
   const { data } = useStudio();
+  const query = useSearchParams();
   if (!data) return <Loading />;
-  return <StudioForm key={video ? 'video' : 'image'} video={video} />;
+  return <StudioForm key={`${video ? 'video' : 'image'}:${query.toString()}`} video={video} />;
 }
 function StudioForm({ video }: { video: boolean }) {
   const { data, selected, select, refresh, notify } = useStudio();
   const query = useSearchParams();
-  const template = data!.templates.find((t) => t.id === query.get('template'));
+  const template =
+    CREATOR_PRESETS.find((t) => t.id === query.get('preset')) ||
+    data!.templates.find((t) => t.id === query.get('template'));
   const [model, setModel] = useState<ModelKey>(
       video ? 'video' : query.get('mode') === 'edit' ? 'edit' : 'image',
     ),
@@ -105,7 +109,7 @@ function StudioForm({ video }: { video: boolean }) {
   return (
     <div className="page studio-page">
       <PageTitle
-        eyebrow={video ? 'BEWEGUNG & MOMENTE' : 'DEINE IDEE IM BILD'}
+        eyebrow={video ? 'DEIN NÄCHSTER CLIP' : 'DEIN NÄCHSTER POST'}
         title={video ? 'Video Studio' : 'Image Studio'}
         action={
           <button
@@ -119,6 +123,19 @@ function StudioForm({ video }: { video: boolean }) {
         }
       />
       <UploadStatusList />
+      {template && !video && (
+        <div className="studio-preset-note">
+          <ImagesPreset cover={template.cover} />
+          <span>
+            <small>VORLAGE GELADEN</small>
+            <strong>{template.title}</strong>
+          </span>
+          <p>Szene, Outfit und Pose sind vorbereitet. Passe sie an deinen Charakter an.</p>
+          <Link href="/explore">
+            Andere Vorlage <ArrowUpRight size={16} />
+          </Link>
+        </div>
+      )}
       <div className="studio-layout">
         <section className="studio-controls">
           <div className="segmented">
@@ -329,6 +346,7 @@ function StudioForm({ video }: { video: boolean }) {
               <label>
                 Format
                 <select
+                  aria-label="Format"
                   disabled={model === 'edit'}
                   value={format}
                   onChange={(e) => setFormat(e.target.value as JobInput['format'])}
@@ -340,7 +358,11 @@ function StudioForm({ video }: { video: boolean }) {
               </label>
               <label>
                 Varianten
-                <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
+                <select
+                  aria-label="Varianten"
+                  value={count}
+                  onChange={(e) => setCount(Number(e.target.value))}
+                >
                   {[1, 2, 3, 4].map((n) => (
                     <option key={n} value={n}>
                       {n} {n === 1 ? 'Bild' : 'Bilder'}
@@ -408,14 +430,20 @@ function StudioForm({ video }: { video: boolean }) {
           <div className="main-preview">
             {preview ? (
               preview.kind === 'video' ? (
-                <video controls playsInline src={preview.url} poster="/demo/interior.jpg" />
+                <video controls playsInline src={preview.url} />
               ) : (
                 <img src={preview.url} alt="Ausgewähltes Ergebnis" />
               )
             ) : (
               <div className="empty-preview">
-                {video ? <Film size={42} /> : <ImagePlus size={42} />}
-                <h2>{video ? 'Gib deinem Bild Bewegung.' : 'Hier beginnt dein nächstes Bild.'}</h2>
+                <div className="creator-empty-visual" aria-hidden="true">
+                  <Image src="/creator/style.webp" alt="" width={180} height={240} />
+                  <Image src="/creator/street.webp" alt="" width={180} height={240} />
+                </div>
+                <span className="eyebrow">FOTO-INSPIRATION</span>
+                <h2>
+                  {video ? 'Dein Bild. Dein nächster Clip.' : 'Dein Charakter. Dein nächster Post.'}
+                </h2>
                 <p>
                   {video
                     ? 'Wähle links ein gespeichertes Startbild.'
@@ -428,7 +456,7 @@ function StudioForm({ video }: { video: boolean }) {
           {preview && (
             <div className="preview-toolbar">
               <div>
-                <strong>{preview.demo ? 'Szenenfoto / Testmedium' : 'Privates Ergebnis'}</strong>
+                <strong>{preview.demo ? 'Demo-Foto / Testmedium' : 'Privates Ergebnis'}</strong>
                 <small>
                   {preview.width} × {preview.height}
                   {preview.duration ? ` · ${preview.duration} s` : ''}
@@ -527,4 +555,9 @@ function StudioForm({ video }: { video: boolean }) {
       )}
     </div>
   );
+}
+
+function ImagesPreset({ cover }: { cover: string }) {
+  // Workspace covers can be remote; retain the existing direct image loading policy there.
+  return <img className="studio-preset-thumb" src={cover} alt="Vorlagen-Inspiration" />;
 }
