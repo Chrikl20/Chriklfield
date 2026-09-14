@@ -45,8 +45,9 @@ test('an expired mail link explains recovery without sending another email', asy
   await page.goto(
     '/auth/callback#error=access_denied&error_code=otp_expired&error_description=private-provider-text',
   );
-  await expect(page.getByRole('alert')).toContainText('abgelaufen oder wurde bereits verwendet');
-  await expect(page.getByRole('alert')).not.toContainText('private-provider-text');
+  const errorNotice = page.getByRole('main').getByRole('alert');
+  await expect(errorNotice).toContainText('abgelaufen oder wurde bereits verwendet');
+  await expect(errorNotice).not.toContainText('private-provider-text');
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect(page.getByRole('link', { name: 'Neuen Anmeldelink anfordern' })).toBeVisible();
   expect(
