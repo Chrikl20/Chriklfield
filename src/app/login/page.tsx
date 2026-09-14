@@ -70,12 +70,16 @@ export default function Login() {
         <h2>Willkommen im Studio.</h2>
         <p>Deine Charaktere, Bilder und Clips an einem Ort. Melde dich mit einem E-Mail-Link an.</p>
         {sent ? (
-          <div className="notice">Prüfe dein Postfach und öffne den Anmeldelink.</div>
+          <div className="notice" role="status">
+            Prüfe dein Postfach und öffne den Link aus der neuesten E-Mail. Du kannst diese Seite
+            offen lassen.
+          </div>
         ) : (
           <form
             className="form-stack"
             onSubmit={async (e) => {
               e.preventDefault();
+              if (busy) return;
               setError('');
               setBusy(true);
               try {

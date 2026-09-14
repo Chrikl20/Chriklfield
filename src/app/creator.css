@@ -1058,3 +1058,26 @@
     transition: none;
   }
 }
+
+.auth-callback {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+.auth-callback h1 {
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  line-height: 1.15;
+  max-width: 28ch;
+}
+.auth-callback p {
+  max-width: 52ch;
+}
+.auth-callback .inline-error {
+  padding: 1rem;
+  line-height: 1.6;
+}

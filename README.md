@@ -50,6 +50,8 @@ Ein Textprompt oder Seed ist **keine Identitätssicherung**. Referenzbilder und 
 7. Stripe zunächst im **Testmodus** einrichten: ein einmaliges Produkt mit 1.000 Credits und ein monatliches Creator-Abo mit 3.000 Credits. Price-IDs in `.env.local` setzen. Customer Portal im Stripe-Dashboard konfigurieren. Webhook `POST /api/webhooks/stripe` für `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid`, `charge.refunded`, `customer.subscription.updated` und `customer.subscription.deleted` einrichten. Den zum Ziel passenden Signing Secret verwenden. Lokal kann [Stripe CLI](https://docs.stripe.com/stripe-cli) mit `stripe listen --forward-to localhost:3000/api/webhooks/stripe` weiterleiten.
 8. `npm run dev`. Für ausdrücklich freigegebene Anbieterprüfungen `ENABLE_PAID_GENERATION=true`; für Stripe-Test-Checkout `ENABLE_STRIPE_CHECKOUT=true`. **`ALLOW_STRIPE_LIVE` bleibt false**, bis echte Zahlungen ausdrücklich freigegeben wurden. Neue Live-Workspaces haben 0 Credits; Credits entstehen durch verifizierte bezahlte Stripe-Vorgänge. Testdaten der automatisierten Tests werden nie in ein Live-Projekt eingespielt.
 
+Details zu E-Mail-Links, Browserwechseln und Fehlermeldungen: [Anmeldung](docs/auth.md).
+
 ## Tests und Build
 
 ```bash

@@ -89,3 +89,8 @@ Die Migrationen wurden lokal auf die tatsächlich von Supabase vergebenen Versio
 3. Stripe-Test-Checkout, Abo-Verlängerung, Teil-/Vollrefund im Zielprojekt prüfen; Dispute-/Chargeback-Prozess ergänzen. Keine Live-Credits aus Testevent-Fakes.
 4. Externen Alarmkanal, Storage-Inventarabgleich, Anbieter-/Auth-Kontolöschung und Backup-Restore-Prozess vervollständigen. Nutzungs-/Datenschutz-/Modellbedingungen klären.
 5. Charakterqualität, Kosten pro freigegebenem Ergebnis und mobile Nutzbarkeit mit beiden Gründern praktisch bewerten. Für grosse Bibliotheken Pagination und Mitgliedereinladungen ergänzen.
+# 14. September 2026: E-Mail-Link und Sitzung
+
+Neue E-Mail-Links verwenden einen separaten zustandslosen Sender und einen Callback, der URL-Fragmente verarbeitet. Die Cookie-Sitzung entsteht erst nach Supabase-Prüfung. Vorhandene PKCE-Links bleiben unterstützt; fehlende Verifier, abgelaufene Links und Versandlimits erhalten sichere, verständliche Meldungen. Details: [auth.md](auth.md).
+
+Tatsächlich lokal geprüft: Typecheck, ESLint, 62 Tests in 8 Dateien und Next.js-Produktionsbuild erfolgreich. Davon 18 gezielte Auth-Tests mit echtem installiertem Supabase-/SSR-Code und simuliertem Anbieter. Desktop-/Mobiltests für den Callback sind als CI-Tests ergänzt. Es wurde keine echte E-Mail verschickt und kein erfolgreicher Login mit einem Live-Konto behauptet. Der abschliessende Live-Test benötigt einen neuen Link und den Klick des Kontoinhabers.

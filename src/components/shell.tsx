@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { api, useStudio } from './studio-context';
+import { isPublicPage } from '@/domain/auth-link';
 const nav = [
   ['/explore', 'Explore', Compass],
   ['/characters', 'Characters', UsersRound],
@@ -31,7 +32,7 @@ export function Shell({ children }: { children: ReactNode }) {
     router = useRouter();
   const { data, selected, select, notice, error } = useStudio();
   const [open, setOpen] = useState(false);
-  if (path === '/login' || path === '/credits') return children;
+  if (isPublicPage(path)) return children;
   const active = nav.find((n) => n[0] === path)?.[1] || 'Admin';
   return (
     <div className="app-shell">

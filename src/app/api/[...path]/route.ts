@@ -6,8 +6,7 @@ import { NextResponse } from 'next/server';
 import { actor, DEMO_ACTOR } from '@/server/auth';
 import { assertActor } from '@/server/access';
 import { adminClient } from '@/server/database';
-import { userClient } from '@/lib/supabase/server';
-import { mode, appUrl, required, assertGenerationEnabled } from '@/server/config';
+import { mode, required, assertGenerationEnabled } from '@/server/config';
 import { json, jsonBody, route, sameOrigin, boundedBody } from '@/server/http';
 import { check, liveSnapshot, ownedAsset, ownedCharacter } from '@/server/repository';
 import {
@@ -209,22 +208,6 @@ export function POST(request: Request, context: Params) {
       throw new Error('NOT_FOUND');
     }
     sameOrigin(request);
-    if (parts[0] === 'auth') {
-      if (mode() === 'demo') return json({ ok: true });
-      const client = await userClient();
-      if (parts[1] === 'logout') {
-        const { error } = await client.auth.signOut();
-        if (error) throw new Error('LOGOUT_FAILED');
-        return json({ ok: true });
-      }
-      const body = z.object({ email: z.email() }).parse(await jsonBody(request));
-      const { error } = await client.auth.signInWithOtp({
-        email: body.email,
-        options: { emailRedirectTo: `${appUrl()}/auth/callback` },
-      });
-      if (error) throw new Error('LOGIN_FAILED');
-      return json({ ok: true });
-    }
     const a = await actor(),
       demo = mode() === 'demo';
     if (!demo) {

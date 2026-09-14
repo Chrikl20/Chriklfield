@@ -33,7 +33,14 @@ export function json(data: unknown, status = 200) {
 }
 export function log(
   event: string,
-  fields: { jobId?: string; attemptId?: string; code?: string; count?: number } = {},
+  fields: {
+    jobId?: string;
+    attemptId?: string;
+    code?: string;
+    count?: number;
+    authStage?: 'send' | 'complete';
+    status?: number;
+  } = {},
 ) {
   console.info(JSON.stringify({ event, ...fields, at: new Date().toISOString() }));
 }

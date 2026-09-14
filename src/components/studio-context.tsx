@@ -2,9 +2,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Snapshot } from '@/domain/types';
+import { isPublicPage } from '@/domain/auth-link';
 const messages: Record<string, string> = {
   CONFIG_MISSING:
-    'Der Live-Modus benötigt die Zugangsdaten aus .env.example. Für die lokale Vorschau: npm run demo.',
+    'Dein Studio ist noch nicht vollständig eingerichtet. Bitte kontaktiere das Chriklfield-Team.',
   RATE_LIMIT: 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.',
   STORAGE_LIMIT: 'Dein privater Speicher ist voll. Lösche nicht mehr benötigte Dateien.',
   UPLOAD_CONCURRENCY_LIMIT: 'Es werden bereits drei Dateien verarbeitet. Bitte kurz warten.',
@@ -90,7 +91,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     }
   }, [router]);
   useEffect(() => {
-    if (pathname !== '/login' && pathname !== '/credits') {
+    if (!isPublicPage(pathname)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize the session with the external API.
       void refresh();
       const timer = setInterval(() => void refresh(), 5000);
