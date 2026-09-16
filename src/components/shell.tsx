@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   Compass,
   UsersRound,
@@ -18,7 +18,9 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { api, useStudio } from './studio-context';
-import { isPublicPage } from '@/domain/auth-link';
+import { standalonePage, publicStudioPage, accountHref } from '@/domain/account';
+import { GuestWorkspace } from './guest-workspace';
+import { Loading } from './ui';
 const nav = [
   ['/explore', 'Explore', Compass],
   ['/characters', 'Characters', UsersRound],
@@ -28,12 +30,11 @@ const nav = [
   ['/billing', 'Billing', Wallet],
 ] as const;
 export function Shell({ children }: { children: ReactNode }) {
-  const path = usePathname(),
-    router = useRouter();
-  const { data, selected, select, notice, error } = useStudio();
+  const path = usePathname();
+  const { data, selected, select, notice, error, authenticated, sessionReady } = useStudio();
   const [open, setOpen] = useState(false);
-  if (isPublicPage(path)) return children;
-  const active = nav.find((n) => n[0] === path)?.[1] || 'Admin';
+  if (standalonePage(path)) return children;
+  const active = nav.find((n) => n[0] === path)?.[1] || (path === '/' ? 'Explore' : 'Admin');
   return (
     <div className="app-shell">
       <a className="skip-link" href="#workspace">
@@ -58,8 +59,14 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="workspace-picker">
           <span className="workspace-avatar">C</span>
           <span>
-            Mein Studio
-            <small>{data?.mode === 'demo' ? 'Demo-Workspace' : 'Privater Workspace'}</small>
+            {authenticated ? 'Mein Studio' : 'Entdecke Chriklfield'}
+            <small>
+              {data?.mode === 'demo'
+                ? 'Demo-Workspace'
+                : authenticated
+                  ? 'Privater Workspace'
+                  : 'Ideen für deinen nächsten Post'}
+            </small>
           </span>
         </div>
         <div className="nav-label">CREATE SOMETHING</div>
@@ -91,36 +98,50 @@ export function Shell({ children }: { children: ReactNode }) {
               Admin
             </Link>
           )}
-          <Link href="/billing" className="credit-box">
-            <span>
-              <Diamond size={16} /> Verfügbare Credits
-            </span>
-            <strong>
-              {data ? (data.balance - data.reserved).toLocaleString('de-CH') : '—'}
-              <small>{data?.plan || 'Free'}</small>
-            </strong>
-            <span className="muted">{data?.reserved || 0} reserviert</span>
-          </Link>
-          <div className="sidebar-foot">
-            <span className="avatar">C</span>
-            <div>
-              Creator<small>Privates Studio</small>
+          {authenticated ? (
+            <Link href="/billing" className="credit-box">
+              <span>
+                <Diamond size={16} /> Verfügbare Credits
+              </span>
+              <strong>
+                {data ? (data.balance - data.reserved).toLocaleString('de-CH') : '—'}
+                <small>{data?.plan || 'Free'}</small>
+              </strong>
+              <span className="muted">{data?.reserved || 0} reserviert</span>
+            </Link>
+          ) : (
+            <div className="guest-sidebar-cta">
+              <strong>Mach die Idee zu deiner.</strong>
+              <p>Dein Charakter. Deine Looks. Dein Content.</p>
+              <Link className="button primary" href={accountHref('signup', path)}>
+                Account erstellen
+              </Link>
             </div>
-            {data?.mode === 'live' ? (
-              <button
-                className="icon-button"
-                aria-label="Abmelden"
-                onClick={async () => {
-                  await api('auth/logout', 'POST');
-                  router.replace('/login');
-                }}
-              >
-                <LogOut size={17} />
-              </button>
-            ) : (
-              <PanelLeftClose size={17} />
-            )}
-          </div>
+          )}
+          {authenticated && (
+            <div className="sidebar-foot">
+              <span className="avatar">C</span>
+              <div>
+                <Link href="/onboarding">
+                  Creator<small>Studio personalisieren</small>
+                </Link>
+              </div>
+              {data?.mode === 'live' ? (
+                <button
+                  className="icon-button"
+                  aria-label="Abmelden"
+                  onClick={async () => {
+                    await api('auth/logout', 'POST');
+                    window.location.replace('/explore');
+                  }}
+                >
+                  <LogOut size={17} />
+                </button>
+              ) : (
+                <PanelLeftClose size={17} />
+              )}
+            </div>
+          )}
         </div>
       </aside>
       <div className="app-content">
@@ -138,24 +159,37 @@ export function Shell({ children }: { children: ReactNode }) {
             <strong>{active}</strong>
           </div>
           <div className="topbar-actions">
-            <label className="character-picker">
-              <UsersRound size={16} />
-              <select
-                aria-label="Aktiver Charakter"
-                value={selected}
-                onChange={(e) => select(e.target.value)}
-              >
-                <option value="">Kein Charakter</option>
-                {data?.characters.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} />
-            </label>
-            <span className="private-label">Privat</span>
-            <span className="avatar small">C</span>
+            {authenticated ? (
+              <>
+                <label className="character-picker">
+                  <UsersRound size={16} />
+                  <select
+                    aria-label="Aktiver Charakter"
+                    value={selected}
+                    onChange={(e) => select(e.target.value)}
+                  >
+                    <option value="">Kein Charakter</option>
+                    {data?.characters.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} />
+                </label>
+                <span className="private-label">Privat</span>
+                <span className="avatar small">C</span>
+              </>
+            ) : (
+              <div className="guest-auth-actions">
+                <Link className="text-button" href={accountHref('login', path)}>
+                  Anmelden
+                </Link>
+                <Link className="button primary compact" href={accountHref('signup', path)}>
+                  Registrieren
+                </Link>
+              </div>
+            )}
           </div>
         </header>
         {data?.mode === 'demo' && (
@@ -166,12 +200,18 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         )}
         <main id="workspace">
-          {error ? (
+          {publicStudioPage(path) ? (
+            children
+          ) : !sessionReady ? (
+            <Loading />
+          ) : !authenticated ? (
+            <GuestWorkspace path={path} />
+          ) : error ? (
             <div className="empty-state error-state">
-              <h1>Studio einrichten</h1>
+              <h1>Dein Workspace ist gerade nicht erreichbar.</h1>
               <p>{error}</p>
-              <Link className="button" href="/login">
-                Zur Anmeldung
+              <Link className="button" href="/explore">
+                Vorlagen entdecken
               </Link>
             </div>
           ) : (

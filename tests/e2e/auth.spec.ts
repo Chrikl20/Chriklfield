@@ -49,7 +49,7 @@ test('an expired mail link explains recovery without sending another email', asy
   await expect(errorNotice).toContainText('abgelaufen oder wurde bereits verwendet');
   await expect(errorNotice).not.toContainText('private-provider-text');
   await expect(page).toHaveURL(/\/auth\/callback$/);
-  await expect(page.getByRole('link', { name: 'Neuen Anmeldelink anfordern' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zur Anmeldung' })).toBeVisible();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
   ).toBe(true);

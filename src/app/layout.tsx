@@ -3,6 +3,7 @@ import { StudioProvider } from '@/components/studio-context';
 import { Shell } from '@/components/shell';
 import './globals.css';
 import './creator.css';
+import './account.css';
 export const metadata: Metadata = {
   title: 'Chriklfield — Creator Studio',
   description:

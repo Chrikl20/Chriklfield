@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthPKCECodeVerifierMissingError } from '@supabase/supabase-js';
-import { POST } from '@/app/api/auth/[action]/route';
+import { GET, POST } from '@/app/api/auth/[action]/route';
+import * as privateApi from '@/app/api/[...path]/route';
 import { userClient } from '@/lib/supabase/server';
 import { authFailure } from '@/server/auth-errors';
 import { isPublicPage, readAuthReturn } from '@/domain/auth-link';
@@ -67,7 +68,7 @@ afterEach(() => {
 describe('email-link authentication', () => {
   it('sends the canonical callback without a browser-bound verifier or server secret', async () => {
     provider.mockResolvedValue(Response.json({}));
-    const response = await request('login', { email: 'test@example.test' });
+    const response = await request('magic-link', { email: 'test@example.test' });
     expect(response.status).toBe(200);
     expect(provider).toHaveBeenCalledTimes(1);
     const [url, init] = provider.mock.calls[0]!;
@@ -186,7 +187,7 @@ describe('email-link authentication', () => {
           },
         ),
       );
-      const response = await request('login', { email: 'test@example.test' });
+      const response = await request('magic-link', { email: 'test@example.test' });
       expect((await response.json()).error).toBe(expected);
       expect(provider).toHaveBeenCalledTimes(1);
     },
@@ -252,6 +253,135 @@ describe('callback routing', () => {
   });
   it('does not race studio polling against a callback that has not established cookies', () => {
     expect(isPublicPage('/auth/callback')).toBe(true);
-    expect(isPublicPage('/explore')).toBe(false);
+    expect(isPublicPage('/explore')).toBe(true);
+  });
+});
+
+describe('password accounts and private preferences', () => {
+  const credentials = { email: 'test@example.test', password: 'a-long-unique-test-passphrase' };
+  it('signs in using the password grant and writes cookies without an email request', async () => {
+    provider.mockImplementation(async (url, init) => {
+      expect(new URL(String(url)).searchParams.get('grant_type')).toBe('password');
+      expect(JSON.parse(String(init?.body))).toMatchObject(credentials);
+      return Response.json({ ...session, user, expires_in: 3600, token_type: 'bearer' });
+    });
+    const response = await request('login', credentials);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, authenticated: true });
+    expect([...cookieJar.values()].some(Boolean)).toBe(true);
+    expect(provider).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(vi.mocked(console.info).mock.calls)).not.toContain(credentials.password);
+  });
+  it('requires a real confirmation before a new account gets a session', async () => {
+    provider.mockImplementation(async (url, init) => {
+      expect(new URL(String(url)).pathname).toBe('/auth/v1/signup');
+      expect(new URL(String(url)).searchParams.get('redirect_to')).toBe(`${origin}/auth/callback`);
+      expect(JSON.parse(String(init?.body))).toMatchObject(credentials);
+      return Response.json({ ...user, identities: [] });
+    });
+    expect(await (await request('signup', credentials)).json()).toEqual({
+      ok: true,
+      confirmationRequired: true,
+    });
+    expect(cookieJar.size).toBe(0);
+  });
+  it('rejects weak passwords, forged roles and cross-origin submissions before the provider', async () => {
+    expect((await request('signup', { ...credentials, password: 'short' })).status).toBe(400);
+    expect((await request('signup', { ...credentials, role: 'admin' })).status).toBe(400);
+    expect((await request('login', credentials, 'https://attacker.test')).status).toBe(403);
+    expect(provider).not.toHaveBeenCalled();
+  });
+  it('gives the same login error for incorrect or nonexistent credentials', async () => {
+    provider.mockResolvedValue(
+      Response.json(
+        { code: 'invalid_credentials', message: 'Sensitive reason' },
+        { status: 400, headers: { 'x-supabase-api-version': '2024-01-01' } },
+      ),
+    );
+    expect((await (await request('login', credentials)).json()).error).toBe('AUTH_CREDENTIALS');
+    expect([...cookieJar.values()].filter(Boolean)).toEqual([]);
+  });
+  it('requests recovery with the existing cross-browser callback and no automatic account creation', async () => {
+    provider.mockImplementation(async (url) => {
+      expect(new URL(String(url)).pathname).toBe('/auth/v1/recover');
+      expect(new URL(String(url)).searchParams.get('redirect_to')).toBe(`${origin}/auth/callback`);
+      return Response.json({});
+    });
+    expect((await request('forgot', { email: credentials.email })).status).toBe(200);
+    expect(cookieJar.size).toBe(0);
+  });
+  it('returns a minimal guest session and rejects anonymous password/preferences writes', async () => {
+    const response = await GET(new Request(`${origin}/api/auth/session`), {
+      params: Promise.resolve({ action: 'session' }),
+    });
+    expect(await response.json()).toEqual({ authenticated: false });
+    expect(
+      (
+        await request('profile', {
+          version: 1,
+          goal: 'images',
+          vibe: 'Fashion',
+          platform: 'tiktok',
+          completed: true,
+        })
+      ).status,
+    ).toBe(401);
+    expect((await request('password', { password: credentials.password })).status).toBe(401);
+    expect(provider).not.toHaveBeenCalled();
+  });
+  it('only updates the current verified user; never accepts another user id or admin fields', async () => {
+    const preferences = {
+      version: 1,
+      goal: 'images',
+      vibe: 'Fashion',
+      platform: 'tiktok',
+      completed: true,
+    };
+    provider.mockImplementation(async (_url, init) => {
+      if (init?.method === 'PUT') {
+        expect(new Headers(init.headers).get('authorization')).toBe(`Bearer ${jwt}`);
+        expect(JSON.parse(String(init.body))).toEqual({
+          data: { creator_preferences: preferences },
+          code_challenge: null,
+          code_challenge_method: null,
+        });
+      }
+      return Response.json({ ...user, user_metadata: { creator_preferences: preferences } });
+    });
+    await request('complete', session);
+    expect((await request('profile', { ...preferences, userId: 'another-user' })).status).toBe(400);
+    expect((await request('profile', { ...preferences, admin: true })).status).toBe(400);
+    expect((await request('profile', preferences)).status).toBe(200);
+    const profile = await GET(new Request(`${origin}/api/auth/session`), {
+      params: Promise.resolve({ action: 'session' }),
+    });
+    expect(await profile.json()).toEqual({ authenticated: true, userId: user.id, preferences });
+  });
+});
+
+describe('anonymous access to private studio APIs', () => {
+  it.each([
+    ['GET', 'state'],
+    ['GET', 'admin'],
+    ['GET', 'assets/00000000-0000-4000-8000-000000000009'],
+    ['POST', 'quotes'],
+    ['POST', 'jobs'],
+    ['POST', 'uploads'],
+    ['POST', 'billing'],
+    ['POST', 'characters'],
+    ['PATCH', 'assets/00000000-0000-4000-8000-000000000009'],
+    ['DELETE', 'workspaces/00000000-0000-4000-8000-000000000009'],
+  ] as const)('rejects %s %s before accessing data or paid providers', async (method, path) => {
+    const response = await privateApi[method](
+      new Request(`${origin}/api/${path}`, {
+        method,
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        ...(method !== 'GET' ? { body: '{}' } : {}),
+      }),
+      { params: Promise.resolve({ path: path.split('/') }) },
+    );
+    expect(response.status).toBe(401);
+    expect((await response.json()).error).toBe('UNAUTHENTICATED');
+    expect(provider).not.toHaveBeenCalled();
   });
 });

@@ -1,0 +1,654 @@
+/* Public exploration, account screens and honest preference-based onboarding. */
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 0;
+  padding: 8px 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.text-button:hover {
+  color: var(--text);
+}
+.guest-auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.guest-sidebar-cta {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  background: linear-gradient(150deg, #24311c, #141814);
+}
+.guest-sidebar-cta strong {
+  font-size: 0.95rem;
+}
+.guest-sidebar-cta p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 9px 0 15px;
+}
+.guest-sidebar-cta .button {
+  width: 100%;
+  font-size: 0.8rem;
+  padding-inline: 8px;
+}
+.guest-explore-note {
+  margin: -10px 0 25px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.personalized-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 26px;
+  border: 1px solid #39452e;
+  border-radius: 12px;
+  padding: 13px 18px;
+  background: #182014;
+}
+.personalized-banner > span {
+  flex: 1;
+  min-width: 200px;
+}
+.personalized-banner strong,
+.personalized-banner small {
+  display: block;
+}
+.personalized-banner small {
+  color: var(--muted);
+  margin-top: 3px;
+}
+.gate-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 25px;
+}
+.gate-note {
+  margin-top: 14px;
+}
+.guest-workspace {
+  display: flex;
+  gap: 55px;
+  align-items: center;
+  max-width: 1000px;
+  padding-top: 70px;
+}
+.guest-workspace-art {
+  flex: 0 0 37%;
+  position: relative;
+  min-height: 450px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.guest-workspace-art img {
+  object-fit: cover;
+}
+.guest-workspace-art > span {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  background: #111a;
+  padding: 5px 9px;
+  border-radius: 5px;
+}
+.guest-workspace h1 {
+  font-size: clamp(2rem, 3.6vw, 3.7rem);
+  margin: 15px 0 20px;
+}
+.guest-workspace p {
+  color: var(--muted);
+  margin-bottom: 25px;
+}
+.guest-workspace .text-button {
+  display: flex;
+  justify-content: flex-start;
+}
+.guest-workspace small {
+  display: flex;
+  gap: 6px;
+  margin-top: 22px;
+  color: var(--muted);
+}
+.account-page {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 48% 52%;
+  background: #0d100c;
+}
+.account-art {
+  position: relative;
+  min-height: 760px;
+  overflow: hidden;
+}
+.account-art > img {
+  object-fit: cover;
+  object-position: center 25%;
+  animation: account-fade 0.4s ease-out;
+}
+.account-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #10150a50, #080e0580 45%, #080e05f0);
+  pointer-events: none;
+}
+.account-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.9px;
+}
+.account-art > .account-brand {
+  position: absolute;
+  top: 32px;
+  left: 36px;
+  z-index: 1;
+}
+.account-art-copy {
+  position: absolute;
+  inset: auto 46px 86px;
+  z-index: 1;
+}
+.account-art-copy h2 {
+  white-space: pre-line;
+  font-size: clamp(2rem, 3.8vw, 4.2rem);
+  line-height: 1.04;
+  letter-spacing: -1.8px;
+  margin: 17px 0 22px;
+}
+.account-art-copy p {
+  max-width: 370px;
+  font-size: 1rem;
+  color: #d1d8c9;
+}
+.slide-dots {
+  display: flex;
+  gap: 7px;
+  margin-top: 30px;
+}
+.slide-dots button {
+  width: 38px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  position: relative;
+}
+.slide-dots button::after {
+  position: absolute;
+  content: '';
+  top: 14px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 6px;
+  background: #ffffff50;
+}
+.slide-dots button[aria-pressed='true']::after {
+  background: var(--accent);
+}
+.account-photo-note {
+  position: absolute;
+  bottom: 25px;
+  left: 36px;
+  z-index: 1;
+  color: #c1c9b9;
+  font-size: 0.73rem;
+}
+.account-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 8%;
+}
+.account-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  min-height: 44px;
+}
+.account-form-content {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  padding: 48px 0;
+}
+.account-form-content h1 {
+  font-size: clamp(2rem, 3vw, 3rem);
+  margin: 14px 0 17px;
+  letter-spacing: -1.2px;
+}
+.account-lead {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-bottom: 30px;
+  line-height: 1.65;
+}
+.account-form-content label {
+  font-size: 0.86rem;
+  gap: 8px;
+}
+.account-form-content input {
+  min-height: 50px;
+  background: #181c16;
+  border-color: #343b2d;
+  border-radius: 10px;
+}
+.password-field {
+  display: flex;
+  position: relative;
+  width: 100%;
+}
+.password-field input {
+  width: 100%;
+  padding-right: 48px;
+}
+.password-field button {
+  position: absolute;
+  right: 5px;
+  top: 4px;
+  min-width: 42px;
+  min-height: 42px;
+}
+.password-hint {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+.forgot-link {
+  align-self: flex-end;
+  font-size: 0.8rem;
+  color: var(--accent);
+  min-height: 35px;
+}
+.account-submit {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+}
+.account-switch {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.account-switch a {
+  color: var(--text);
+  font-weight: 600;
+  margin-left: 4px;
+}
+.account-private {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  color: #9aa990;
+  margin-top: 28px;
+  font-size: 0.76rem;
+}
+.account-footnote {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 16px;
+}
+.account-sent {
+  display: grid;
+  gap: 18px;
+}
+.account-sent p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.account-mail {
+  display: flex;
+  width: 60px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+  background: #27311c;
+  border-radius: 16px;
+  color: var(--accent);
+}
+.onboarding-page {
+  min-height: 100svh;
+  padding: 25px 5% 50px;
+  background: radial-gradient(ellipse at 50% 0, #26331d65, transparent 60%), #0d100c;
+}
+.onboarding-page > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 auto 45px;
+  max-width: 1200px;
+}
+.onboarding-card {
+  display: grid;
+  grid-template-columns: 56% 44%;
+  max-width: 1080px;
+  min-height: 660px;
+  margin: auto;
+  border: 1px solid #303828;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #12170f;
+}
+.onboarding-questions {
+  display: flex;
+  flex-direction: column;
+  padding: 45px;
+}
+.onboarding-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 30px;
+}
+.onboarding-progress span {
+  height: 3px;
+  flex: 1;
+  background: #343c2e;
+  border-radius: 3px;
+}
+.onboarding-progress .complete {
+  background: var(--accent);
+}
+.onboarding-step {
+  animation: account-fade 0.3s ease-out;
+}
+.onboarding-step h1 {
+  font-size: 2.2rem;
+  margin: 15px 0;
+}
+.onboarding-step > p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  min-height: 45px;
+}
+.onboarding-options {
+  display: grid;
+  gap: 12px;
+  margin: 27px 0;
+}
+.onboarding-options > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+  padding: 16px;
+  min-height: 85px;
+  background: #1b2116;
+  border: 1px solid #353e2e;
+  border-radius: 12px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.onboarding-options > .chosen {
+  border-color: var(--accent);
+  background: #28381a;
+}
+.onboarding-options > button > span:not(.format-icon) {
+  flex: 1;
+}
+.onboarding-options strong,
+.onboarding-options small {
+  display: block;
+}
+.onboarding-options strong {
+  font-size: 0.92rem;
+}
+.onboarding-options small {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.onboarding-options img {
+  border-radius: 7px;
+  object-fit: cover;
+}
+.onboarding-options svg {
+  flex-shrink: 0;
+}
+.onboarding-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+}
+.onboarding-footnote {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-top: 24px;
+}
+.onboarding-visual {
+  position: relative;
+  overflow: hidden;
+}
+.onboarding-visual > img {
+  object-fit: cover;
+  animation: account-fade 0.3s ease-out;
+}
+.onboarding-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #0a1307 5%, transparent 90%);
+}
+.onboarding-visual > div {
+  position: absolute;
+  z-index: 1;
+  bottom: 38px;
+  left: 30px;
+  right: 22px;
+}
+.onboarding-visual .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+.onboarding-visual h2 {
+  font-size: 2.7rem;
+  line-height: 1.13;
+  margin: 15px 0;
+}
+.onboarding-visual h2 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.onboarding-visual p {
+  color: #d0dac6;
+  font-size: 0.9rem;
+}
+.onboarding-format {
+  display: inline-flex;
+  border: 1px solid #c2d4b34a;
+  color: #d4dec9;
+  padding: 7px 11px;
+  border-radius: 7px;
+  margin-top: 20px;
+  font-size: 0.75rem;
+}
+.format-icon {
+  display: block;
+  width: 27px;
+  height: 32px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  margin: 0 5px;
+  flex-shrink: 0;
+}
+.format-tiktok {
+  width: 20px;
+  height: 36px;
+  margin-inline: 8px 9px;
+}
+.format-youtube {
+  width: 36px;
+  height: 22px;
+  margin-inline: 0 1px;
+}
+@keyframes account-fade {
+  from {
+    opacity: 0.4;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 1050px) {
+  .account-art-copy {
+    left: 28px;
+    right: 28px;
+  }
+  .onboarding-questions {
+    padding: 30px;
+  }
+}
+@media (max-width: 760px) {
+  .guest-auth-actions {
+    gap: 10px;
+  }
+  .guest-auth-actions .text-button {
+    font-size: 0.78rem;
+  }
+  .guest-auth-actions .button {
+    font-size: 0.75rem;
+    padding-inline: 12px;
+  }
+  .guest-workspace {
+    flex-direction: column;
+    padding-top: 25px;
+    gap: 28px;
+    align-items: stretch;
+  }
+  .guest-workspace-art {
+    flex: auto;
+    min-height: 240px;
+    max-height: 300px;
+  }
+  .guest-workspace-art img {
+    object-position: center 25%;
+  }
+  .account-page {
+    display: flex;
+    flex-direction: column;
+  }
+  .account-panel {
+    order: -1;
+    padding: 18px 24px 26px;
+  }
+  .account-form-content {
+    padding: 35px 0 20px;
+  }
+  .account-form-content h1 {
+    font-size: 2.3rem;
+  }
+  .account-form-content input {
+    font-size: 16px;
+  }
+  .account-art {
+    min-height: 340px;
+  }
+  .account-art > .account-brand {
+    top: 20px;
+    left: 24px;
+    font-size: 1.1rem;
+  }
+  .account-art-copy {
+    bottom: 45px;
+    left: 24px;
+    right: 24px;
+  }
+  .account-art-copy h2 {
+    font-size: 2rem;
+    margin: 10px 0;
+  }
+  .account-art-copy p {
+    max-width: 320px;
+    font-size: 0.82rem;
+  }
+  .account-art-copy .eyebrow {
+    display: none;
+  }
+  .slide-dots {
+    margin-top: 10px;
+  }
+  .account-photo-note {
+    bottom: 16px;
+    left: 24px;
+  }
+  .onboarding-page {
+    padding: 17px 16px 35px;
+  }
+  .onboarding-page > header {
+    margin-bottom: 22px;
+  }
+  .onboarding-page .account-brand {
+    font-size: 1.15rem;
+  }
+  .onboarding-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 17px;
+    min-height: auto;
+  }
+  .onboarding-questions {
+    padding: 24px 20px;
+  }
+  .onboarding-step h1 {
+    font-size: 1.85rem;
+  }
+  .onboarding-options > button {
+    padding: 13px;
+    gap: 12px;
+  }
+  .onboarding-options strong {
+    font-size: 0.87rem;
+  }
+  .onboarding-visual {
+    min-height: 235px;
+  }
+  .onboarding-visual > img {
+    object-position: center 30%;
+  }
+  .onboarding-visual > div {
+    bottom: 20px;
+    left: 22px;
+  }
+  .onboarding-visual h2 {
+    font-size: 1.8rem;
+    margin: 8px 0;
+  }
+  .onboarding-format {
+    margin-top: 10px;
+  }
+  .onboarding-footnote {
+    margin-top: 17px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-art > img,
+  .onboarding-step,
+  .onboarding-visual > img {
+    animation: none;
+  }
+}

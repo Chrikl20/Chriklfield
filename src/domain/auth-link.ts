@@ -20,6 +20,11 @@ export const authCompletionSchema = z.union([
 export type AuthCompletion = z.infer<typeof authCompletionSchema>;
 
 export const authMessages = {
+  AUTH_CREDENTIALS: 'E-Mail-Adresse oder Passwort stimmen nicht überein.',
+  AUTH_EMAIL_UNCONFIRMED: 'Bestätige zuerst deine E-Mail-Adresse über den Link in deinem Postfach.',
+  AUTH_PASSWORD_WEAK: 'Dieses Passwort ist zu schwach. Wähle ein längeres, einzigartiges Passwort.',
+  AUTH_PASSWORD_SAME: 'Wähle ein anderes Passwort als dein bisheriges.',
+  AUTH_SIGNUP_DISABLED: 'Neue Registrierungen sind derzeit nicht freigeschaltet.',
   AUTH_LINK_INVALID:
     'Der Anmeldelink ist unvollständig oder ungültig. Fordere einen neuen Link an.',
   AUTH_LINK_EXPIRED:
@@ -64,5 +69,5 @@ export function readAuthReturn(href: string): AuthCompletion | AuthFailureCode {
 }
 
 export function isPublicPage(pathname: string) {
-  return pathname === '/login' || pathname === '/credits' || pathname === '/auth/callback';
+  return ['/login', '/signup', '/forgot-password', '/reset-password', '/onboarding', '/credits', '/auth/callback', '/', '/explore', '/image', '/video'].includes(pathname);
 }
