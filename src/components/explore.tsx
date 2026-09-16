@@ -13,15 +13,18 @@ import {
 import { useState } from 'react';
 import { CREATOR_PRESETS } from '@/domain/creator-presets';
 import { useStudio } from './studio-context';
-import { Loading } from './ui';
+import { preferredStudio } from '@/domain/account';
 
 export function Explore() {
-  const { data, selected } = useStudio();
+  const { data, selected, preferences, authenticated } = useStudio();
   const [category, setCategory] = useState('Alle');
-  if (!data) return <Loading />;
-  const presets = CREATOR_PRESETS.filter((p) => category === 'Alle' || p.category === category);
-  const character = data.characters.find((c) => c.id === selected);
-  const startImage = data.assets.find((a) => a.kind === 'image' && a.character_id === selected);
+  const presets = [...CREATOR_PRESETS]
+    .sort(
+      (a, b) => Number(b.category === preferences?.vibe) - Number(a.category === preferences?.vibe),
+    )
+    .filter((p) => category === 'Alle' || p.category === category);
+  const character = data?.characters.find((c) => c.id === selected);
+  const startImage = data?.assets.find((a) => a.kind === 'image' && a.character_id === selected);
 
   return (
     <div className="page creator-explore">
@@ -34,6 +37,32 @@ export function Explore() {
           <Plus size={17} /> Charakter erstellen
         </Link>
       </div>
+      {preferences && (
+        <div className="personalized-banner">
+          <span>
+            <strong>Dein Mix: {preferences.vibe}</strong>
+            <small>
+              Passende Vorlagen zuerst · Startwerte für{' '}
+              {preferences.platform === 'tiktok'
+                ? 'TikTok'
+                : preferences.platform === 'youtube'
+                  ? 'YouTube'
+                  : 'Instagram'}
+            </small>
+          </span>
+          <Link className="button compact" href={preferredStudio(preferences)}>
+            Loslegen <ArrowRight size={15} />
+          </Link>
+          <Link className="text-button" href="/onboarding">
+            Anpassen
+          </Link>
+        </div>
+      )}
+      {!authenticated && (
+        <p className="guest-explore-note">
+          Schau dich um. Wähle einen Look. Erstelle deinen Account, wenn du loslegen möchtest.
+        </p>
+      )}
       <section className="creator-features" aria-label="Dein Creator-Workflow">
         <article className="creator-hero">
           <div className="hero-portraits" aria-hidden="true">
@@ -210,13 +239,13 @@ export function Explore() {
           Zu deinen Characters <ArrowRight size={17} />
         </Link>
       </section>
-      {data.templates.length > 0 && (
+      {!!data?.templates.length && (
         <details className="workspace-templates">
           <summary>
-            Weitere Studio-Vorlagen <span>{data.templates.length}</span>
+            Weitere Studio-Vorlagen <span>{data?.templates.length}</span>
           </summary>
           <div className="workspace-template-links">
-            {data.templates.map((t) => (
+            {data?.templates.map((t) => (
               <Link key={t.id} href={`/image?template=${t.id}`}>
                 <span>
                   <strong>{t.title}</strong>

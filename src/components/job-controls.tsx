@@ -9,18 +9,25 @@ export function CostButton({
   input,
   label = 'Preis berechnen',
   disabled = false,
+  beforeAuth,
 }: {
   input: Partial<JobInput>;
   label?: string;
   disabled?: boolean;
+  beforeAuth?: () => void;
 }) {
-  const { data, notify, refresh } = useStudio();
+  const { data, notify, refresh, authenticated, requireAccount, sessionReady } = useStudio();
   const [quote, setQuote] = useState<Quote | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const pending = useRef(false),
     key = useRef('');
   async function getQuote() {
+    if (!authenticated) {
+      beforeAuth?.();
+      requireAccount();
+      return;
+    }
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -61,10 +68,11 @@ export function CostButton({
     <>
       <button
         className="button primary generate-button"
-        disabled={disabled || busy}
+        disabled={!sessionReady || (authenticated && disabled) || busy}
         onClick={getQuote}
       >
-        {busy ? <LoaderCircle size={18} className="spin" /> : <Sparkles size={18} />} {label}
+        {busy ? <LoaderCircle size={18} className="spin" /> : <Sparkles size={18} />}{' '}
+        {authenticated ? label : 'Generieren'}
       </button>
       {error && !quote && (
         <p className="inline-error" role="alert">

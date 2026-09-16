@@ -1,9 +1,18 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import {
+  accountHref,
+  standalonePage,
+  type AccountSession,
+  type CreatorPreferences,
+} from '@/domain/account';
+import { Modal } from './ui';
 import type { Snapshot } from '@/domain/types';
-import { isPublicPage } from '@/domain/auth-link';
+
 const messages: Record<string, string> = {
+  UNAUTHENTICATED: 'Bitte melde dich an, um fortzufahren.',
   CONFIG_MISSING:
     'Dein Studio ist noch nicht vollständig eingerichtet. Bitte kontaktiere das Chriklfield-Team.',
   RATE_LIMIT: 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.',
@@ -40,6 +49,14 @@ const messages: Record<string, string> = {
   UNSUPPORTED_MEDIA: 'Bitte JPEG, PNG, WebP oder MP4 verwenden.',
   INTERNAL_ERROR: 'Die Anfrage konnte nicht abgeschlossen werden. Bitte erneut versuchen.',
 };
+export class ApiError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
 export async function api<T>(url: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(`/api/${url}`, {
     method,
@@ -49,11 +66,18 @@ export async function api<T>(url: string, method = 'GET', body?: unknown): Promi
   });
   const data = await response.json();
   if (!response.ok)
-    throw new Error(data.message || messages[data.error] || data.error || 'Anfrage fehlgeschlagen');
+    throw new ApiError(
+      data.error,
+      data.message || messages[data.error] || data.error || 'Anfrage fehlgeschlagen',
+    );
   return data;
 }
 interface StudioContext {
   data: Snapshot | null;
+  authenticated: boolean;
+  sessionReady: boolean;
+  preferences: CreatorPreferences | null;
+  requireAccount: () => boolean;
   selected: string;
   select: (id: string) => void;
   refresh: () => Promise<void>;
@@ -63,41 +87,58 @@ interface StudioContext {
 }
 const Context = createContext<StudioContext | null>(null);
 export function StudioProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<Snapshot | null>(null),
-    [selected, setSelected] = useState(''),
-    [notice, notify] = useState(''),
-    [error, setError] = useState('');
-  const pathname = usePathname(),
-    router = useRouter();
+  const [data, setData] = useState<Snapshot | null>(null);
+  const [session, setSession] = useState<AccountSession>({ authenticated: false });
+  const [sessionReady, setSessionReady] = useState(false);
+  const [selected, setSelected] = useState('');
+  const [notice, notify] = useState('');
+  const [error, setError] = useState('');
+  const [gateNext, setGateNext] = useState<string | null>(null);
+  const pathname = usePathname();
   const refresh = useCallback(async () => {
     try {
-      const s = await api<Snapshot>('state');
-      setData(s);
+      const account = await api<AccountSession>('auth/session');
+      setSession(account);
       setError('');
-      setSelected((prev) =>
-        s.characters.some((c) => c.id === prev)
-          ? prev
-          : s.characters.find((c) => c.id === localStorage.getItem(`character:${s.userId}`))?.id ||
-            s.characters[0]?.id ||
-            '',
-      );
-    } catch (e) {
-      const message = (e as Error).message;
-      if (message === 'UNAUTHENTICATED') {
-        router.replace('/login');
+      if (!account.authenticated) {
+        setData(null);
+        setSelected('');
         return;
       }
-      setError(message);
+      if (standalonePage(pathname)) return;
+      const s = await api<Snapshot>('state');
+      setData(s);
+      setSelected((prev) => {
+        let saved = '';
+        try {
+          saved = localStorage.getItem(`character:${s.userId}`) || '';
+        } catch {
+          /* Storage is optional. */
+        }
+        return s.characters.some((c) => c.id === prev)
+          ? prev
+          : s.characters.find((c) => c.id === saved)?.id || s.characters[0]?.id || '';
+      });
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'UNAUTHENTICATED') {
+        setSession({ authenticated: false });
+        setData(null);
+        setSelected('');
+      } else setError((e as Error).message);
+    } finally {
+      setSessionReady(true);
     }
-  }, [router]);
+  }, [pathname]);
   useEffect(() => {
-    if (!isPublicPage(pathname)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize the session with the external API.
-      void refresh();
-      const timer = setInterval(() => void refresh(), 5000);
-      return () => clearInterval(timer);
-    }
+    if (pathname === '/auth/callback') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize with the authenticated server session.
+    void refresh();
   }, [refresh, pathname]);
+  useEffect(() => {
+    if (!session.authenticated || standalonePage(pathname)) return;
+    const timer = setInterval(() => void refresh(), 5000);
+    return () => clearInterval(timer);
+  }, [session.authenticated, pathname, refresh]);
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => notify(''), 7000);
@@ -105,11 +146,64 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   }, [notice]);
   function select(id: string) {
     setSelected(id);
-    if (data) localStorage.setItem(`character:${data.userId}`, id);
+    try {
+      if (data) localStorage.setItem(`character:${data.userId}`, id);
+    } catch {
+      /* Optional preference. */
+    }
+  }
+  function requireAccount() {
+    if (session.authenticated) return true;
+    setGateNext(window.location.pathname + window.location.search);
+    return false;
   }
   return (
-    <Context.Provider value={{ data, selected, select, refresh, notice, notify, error }}>
+    <Context.Provider
+      value={{
+        data,
+        authenticated: session.authenticated,
+        sessionReady,
+        preferences: session.preferences || null,
+        requireAccount,
+        selected,
+        select,
+        refresh,
+        notice,
+        notify,
+        error,
+      }}
+    >
       {children}
+      {gateNext && (
+        <Modal title="Deine Idee ist bereit." onClose={() => setGateNext(null)}>
+          <p>
+            Erstelle deinen Account, um Bilder und Clips zu generieren und deine eigenen Charaktere
+            zu speichern.
+          </p>
+          <p className="muted gate-note">
+            Dein Entwurf bleibt in diesem Tab erhalten. Den Preis siehst du vor jedem Start.
+          </p>
+          <div className="gate-actions">
+            <Link
+              className="button primary"
+              href={accountHref('signup', gateNext)}
+              onClick={() => setGateNext(null)}
+            >
+              Account erstellen
+            </Link>
+            <Link
+              className="button"
+              href={accountHref('login', gateNext)}
+              onClick={() => setGateNext(null)}
+            >
+              Ich habe schon einen Account
+            </Link>
+            <button className="text-button" onClick={() => setGateNext(null)}>
+              Weiter umschauen
+            </button>
+          </div>
+        </Modal>
+      )}
     </Context.Provider>
   );
 }

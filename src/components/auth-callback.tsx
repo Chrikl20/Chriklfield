@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { authMessages, readAuthReturn } from '@/domain/auth-link';
 import { api } from './studio-context';
+import { continueToStudio } from './account-form';
+import { safeDestination } from '@/domain/account';
 
 export function AuthCallback() {
   const started = useRef(false);
@@ -12,6 +14,7 @@ export function AuthCallback() {
     // Capture only supported credentials, then remove them from history before
     // any request or navigation. Tokens are sent in a same-origin POST body.
     const result = readAuthReturn(window.location.href);
+    const recovery = new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery';
     window.history.replaceState(null, '', '/auth/callback');
     async function complete() {
       if (typeof result === 'string') {
@@ -21,7 +24,18 @@ export function AuthCallback() {
       try {
         await api('auth/complete', 'POST', result);
         // Full navigation starts studio requests only after cookies are persisted.
-        window.location.replace('/explore');
+        if (recovery) {
+          window.location.replace('/reset-password');
+          return;
+        }
+        let next = '/explore';
+        try {
+          next = safeDestination(sessionStorage.getItem('chriklfield:returnTo'));
+          sessionStorage.removeItem('chriklfield:returnTo');
+        } catch {
+          /* Default to Explore. */
+        }
+        await continueToStudio(next);
       } catch (error) {
         setError(error instanceof Error ? error.message : authMessages.AUTH_UNAVAILABLE);
       }
@@ -41,7 +55,7 @@ export function AuthCallback() {
             {error}
           </p>
           <a className="button primary" href="/login">
-            Neuen Anmeldelink anfordern
+            Zur Anmeldung
           </a>
         </>
       ) : (

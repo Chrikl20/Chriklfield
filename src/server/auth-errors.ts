@@ -4,6 +4,11 @@ import { authMessages, type AuthFailureCode } from '@/domain/auth-link';
 import { json, log } from './http';
 
 const failures: Record<string, { code: AuthFailureCode; status: number }> = {
+  invalid_credentials: { code: 'AUTH_CREDENTIALS', status: 401 },
+  email_not_confirmed: { code: 'AUTH_EMAIL_UNCONFIRMED', status: 403 },
+  weak_password: { code: 'AUTH_PASSWORD_WEAK', status: 400 },
+  same_password: { code: 'AUTH_PASSWORD_SAME', status: 400 },
+  signup_disabled: { code: 'AUTH_SIGNUP_DISABLED', status: 403 },
   pkce_code_verifier_not_found: { code: 'AUTH_BROWSER_MISMATCH', status: 401 },
   bad_code_verifier: { code: 'AUTH_BROWSER_MISMATCH', status: 401 },
   flow_state_not_found: { code: 'AUTH_LINK_EXPIRED', status: 401 },

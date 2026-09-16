@@ -1,7 +1,9 @@
 'use client';
 import { uploadMedia } from './upload-media';
 import { UploadStatusList } from './upload-status';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { preferredFormat } from '@/domain/account';
+import { readStudioDraft } from '@/domain/studio-draft';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -23,17 +25,18 @@ import { CostButton } from './job-controls';
 import { PageTitle, Loading, Status } from './ui';
 import { ReferenceForm } from './characters';
 export function GenerationStudio({ video = false }: { video?: boolean }) {
-  const { data } = useStudio();
+  const { data, sessionReady, authenticated, error } = useStudio();
   const query = useSearchParams();
-  if (!data) return <Loading />;
+  if (!sessionReady || (authenticated && !data && !error)) return <Loading />;
   return <StudioForm key={`${video ? 'video' : 'image'}:${query.toString()}`} video={video} />;
 }
 function StudioForm({ video }: { video: boolean }) {
-  const { data, selected, select, refresh, notify } = useStudio();
+  const { data, selected, select, refresh, notify, preferences, authenticated, requireAccount } =
+    useStudio();
   const query = useSearchParams();
   const template =
     CREATOR_PRESETS.find((t) => t.id === query.get('preset')) ||
-    data!.templates.find((t) => t.id === query.get('template'));
+    data?.templates.find((t) => t.id === query.get('template'));
   const [model, setModel] = useState<ModelKey>(
       video ? 'video' : query.get('mode') === 'edit' ? 'edit' : 'image',
     ),
@@ -46,7 +49,9 @@ function StudioForm({ video }: { video: boolean }) {
           ? 'A gentle camera move, natural breathing, subtle motion, consistent appearance.'
           : ''),
     ),
-    [format, setFormat] = useState<JobInput['format']>(template?.format || '4:5'),
+    [format, setFormat] = useState<JobInput['format']>(
+      template?.format || preferredFormat(preferences),
+    ),
     [count, setCount] = useState(1),
     [duration, setDuration] = useState(5),
     [audio, setAudio] = useState(false),
@@ -61,11 +66,13 @@ function StudioForm({ video }: { video: boolean }) {
     [reference, setReference] = useState<Asset | null>(null),
     [uploading, setUploading] = useState(false),
     [uploadPhase, setUploadPhase] = useState('Wird übertragen …');
-  const character = data!.characters.find((c) => c.id === selected),
-    versions = data!.versions.filter((v) => v.character_id === selected && v.status === 'ready');
-  const assets = data!.assets.filter((a) => a.kind === (video ? 'video' : 'image'));
-  const sourceAsset = data!.assets.find((a) => a.id === source);
-  const activeJobs = data!.jobs.filter(
+  const character = (data?.characters || []).find((c) => c.id === selected),
+    versions = (data?.versions || []).filter(
+      (v) => v.character_id === selected && v.status === 'ready',
+    );
+  const assets = (data?.assets || []).filter((a) => a.kind === (video ? 'video' : 'image'));
+  const sourceAsset = (data?.assets || []).find((a) => a.id === source);
+  const activeJobs = (data?.jobs || []).filter(
     (j) =>
       ['queued', 'submitting', 'unknown', 'running', 'persisting'].includes(j.status) &&
       (video
@@ -93,11 +100,45 @@ function StudioForm({ video }: { video: boolean }) {
     loraScale: scale,
     ...(seed ? { seed: Number(seed) } : {}),
   };
+  const draftKey = `chriklfield:draft:${video ? 'video' : 'image'}:${query.toString()}`;
+  function saveDraft() {
+    try {
+      sessionStorage.setItem(
+        draftKey,
+        JSON.stringify({ expires: Date.now() + 60 * 60 * 1000, value: input }),
+      );
+    } catch {
+      /* A blocked store must not block sign-in. */
+    }
+  }
+  useEffect(() => {
+    let draft;
+    try {
+      draft = readStudioDraft(sessionStorage.getItem(draftKey));
+      if (authenticated) sessionStorage.removeItem(draftKey);
+    } catch {
+      return;
+    }
+    if (!draft) return;
+    /* eslint-disable react-hooks/set-state-in-effect -- Restore this tab's explicitly saved guest draft once after navigation. */
+    setModel(draft.model);
+    setScene(draft.scene);
+    setOutfit(draft.outfit);
+    setPose(draft.pose);
+    setPrompt(draft.prompt);
+    setFormat(draft.format);
+    setCount(draft.count);
+    setDuration(draft.duration);
+    setAudio(draft.audio);
+    setOrientation(draft.orientation);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [draftKey, authenticated]);
   async function upload(file: File | undefined) {
+    if (!requireAccount() || !data) return;
     if (!file) return;
     setUploading(true);
     try {
-      const a = await uploadMedia(file, data!.mode, undefined, setUploadPhase);
+      const a = await uploadMedia(file, data.mode, undefined, setUploadPhase);
       setMotion(a.id);
       await refresh();
     } catch (e) {
@@ -169,7 +210,7 @@ function StudioForm({ video }: { video: boolean }) {
               }}
             >
               <option value="">Charakter wählen</option>
-              {data!.characters.map((c) => (
+              {(data?.characters || []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -217,7 +258,7 @@ function StudioForm({ video }: { video: boolean }) {
                 Gespeichertes Startbild
                 <select value={source} onChange={(e) => setSource(e.target.value)}>
                   <option value="">Bild aus der Library wählen</option>
-                  {data!.assets
+                  {(data?.assets || [])
                     .filter((a) => a.kind === 'image')
                     .map((a, i) => (
                       <option value={a.id} key={a.id}>
@@ -241,7 +282,7 @@ function StudioForm({ video }: { video: boolean }) {
                     Bewegungsreferenz
                     <select value={motion} onChange={(e) => setMotion(e.target.value)}>
                       <option value="">MP4 auswählen</option>
-                      {data!.assets
+                      {(data?.assets || [])
                         .filter((a) => a.kind === 'video')
                         .map((a, i) => (
                           <option value={a.id} key={a.id}>
@@ -250,13 +291,22 @@ function StudioForm({ video }: { video: boolean }) {
                         ))}
                     </select>
                   </label>
-                  <label className="button upload-button">
+                  <label
+                    className="button upload-button"
+                    onClick={(e) => {
+                      if (!authenticated) {
+                        e.preventDefault();
+                        saveDraft();
+                        requireAccount();
+                      }
+                    }}
+                  >
                     <Upload size={16} />
                     {uploading ? uploadPhase : 'Bewegung hochladen'}
                     <input
                       type="file"
                       accept="video/mp4"
-                      disabled={uploading}
+                      disabled={uploading || !authenticated}
                       onChange={(e) => void upload(e.target.files?.[0])}
                     />
                   </label>
@@ -413,6 +463,7 @@ function StudioForm({ video }: { video: boolean }) {
           <div className="generate-area">
             <CostButton
               input={input}
+              beforeAuth={saveDraft}
               disabled={!prompt.trim() || uploading || (video && !source)}
             />
             <p>
@@ -542,7 +593,7 @@ function StudioForm({ video }: { video: boolean }) {
         <ReferenceForm
           asset={reference}
           characterId={selected}
-          reference={data!.references.find(
+          reference={(data?.references || []).find(
             (r) => r.asset_id === reference.id && r.character_id === selected,
           )}
           onClose={() => setReference(null)}

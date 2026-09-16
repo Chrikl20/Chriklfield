@@ -4,7 +4,7 @@ import { Loading } from '@/components/ui';
 export default function Page() {
   return (
     <Suspense fallback={<Loading />}>
-      <AccountForm view="login" />
+      <AccountForm view="forgot" />
     </Suspense>
   );
 }

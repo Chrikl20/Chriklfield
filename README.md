@@ -15,7 +15,7 @@ Voraussetzungen: Node.js **24 LTS**, npm, Git. Für Video-Uploads zusätzlich `f
 Den vollständigen Implementierungsbranch klonen:
 
 ```bash
-git clone --branch feat/vercel-uploads https://github.com/Chrikl20/Chriklfield.git chriklfield
+git clone --branch feat/public-studio-accounts https://github.com/Chrikl20/Chriklfield.git chriklfield
 cd chriklfield
 npm ci
 npm run demo
@@ -43,14 +43,14 @@ Ein Textprompt oder Seed ist **keine Identitätssicherung**. Referenzbilder und 
 
 1. `cp .env.example .env.local`. `APP_MODE=live` setzen; Schlüssel nur in der lokalen Datei bzw. im Secret Store des Hosters eintragen. Die Datei bleibt git-ignoriert.
 2. Supabase-Projekt anlegen, PostgreSQL 17 verwenden. Alle SQL-Dateien unter `supabase/migrations/` in Dateinamenreihenfolge anwenden. Mit der [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started): `supabase link --project-ref DEINE_REFERENZ`, danach `supabase db push`. Vorher das richtige Ziel prüfen; für bestehende Datenbanken Backup anlegen. Für einen frischen lokalen Stack: `supabase start`, `supabase db reset` (löscht lokale Daten).
-3. In Supabase Auth Site URL und Redirect URL `https://DEINE_DOMAIN/auth/callback` konfigurieren; lokal zusätzlich `http://localhost:3000/auth/callback`. E-Mail-Anmeldung und einen eigenen SMTP-Dienst konfigurieren. URL, öffentlichen Publishable/Anon-Key und **separaten Service-Role-Key** in `.env.local` setzen. `creator-private` wird durch die Migration privat angelegt; keine öffentlichen Buckets erstellen.
+3. In Supabase Auth Site URL und Redirect URL `https://DEINE_DOMAIN/auth/callback` konfigurieren; lokal zusätzlich `http://localhost:3000/auth/callback`. E-Mail/Passwort-Anmeldung mit E-Mail-Bestätigung und einen eigenen SMTP-Dienst konfigurieren. URL, öffentlichen Publishable/Anon-Key und **separaten Service-Role-Key** in `.env.local` setzen. `creator-private` wird durch die Migration privat angelegt; keine öffentlichen Buckets erstellen.
 4. Ein Trigger.dev-Projekt anlegen; Project-Ref und Secret-Key konfigurieren. `npm run worker:dev` in einem zweiten Terminal starten. Das Dashboard muss die Tasks `creator-job`, `recover-jobs`, `recover-payments`, `private-retention`, `media-upload` und `recover-uploads` zeigen. Für den Worker dieselben Backend-Variablen setzen. [Trigger.dev-Konfiguration](https://trigger.dev/docs/config/config-file).
 5. fal-Konto und API-Key eintragen. `FAL_WEBHOOK_USER_ID` ist die zum Key gehörende fal-Nutzer-ID für die Signaturprüfung. Einen unabhängigen, mindestens 32 Zeichen langen `FAL_WEBHOOK_BINDING_SECRET` erzeugen, z. B. `openssl rand -hex 32`. Ein öffentlich erreichbarer **HTTPS**-Callback unter `APP_URL` ist für echte Starts erforderlich. Keine kostenpflichtigen Tests ohne ausdrückliche Freigabe.
 6. Einmal über `/login` anmelden. Die Supabase-Nutzer-UUID der Gründer in `ADMIN_USER_IDS` eintragen. Im Adminpanel fal-Preise abrufen, Einheit/Rundung/Audiotarif/Trainingsauflösung mit dem eigenen Account abgleichen und die passenden Modelle aktivieren. Ungeprüfte oder über sieben Tage alte Preise sperren Starts.
 7. Stripe zunächst im **Testmodus** einrichten: ein einmaliges Produkt mit 1.000 Credits und ein monatliches Creator-Abo mit 3.000 Credits. Price-IDs in `.env.local` setzen. Customer Portal im Stripe-Dashboard konfigurieren. Webhook `POST /api/webhooks/stripe` für `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid`, `charge.refunded`, `customer.subscription.updated` und `customer.subscription.deleted` einrichten. Den zum Ziel passenden Signing Secret verwenden. Lokal kann [Stripe CLI](https://docs.stripe.com/stripe-cli) mit `stripe listen --forward-to localhost:3000/api/webhooks/stripe` weiterleiten.
 8. `npm run dev`. Für ausdrücklich freigegebene Anbieterprüfungen `ENABLE_PAID_GENERATION=true`; für Stripe-Test-Checkout `ENABLE_STRIPE_CHECKOUT=true`. **`ALLOW_STRIPE_LIVE` bleibt false**, bis echte Zahlungen ausdrücklich freigegeben wurden. Neue Live-Workspaces haben 0 Credits; Credits entstehen durch verifizierte bezahlte Stripe-Vorgänge. Testdaten der automatisierten Tests werden nie in ein Live-Projekt eingespielt.
 
-Details zu E-Mail-Links, Browserwechseln und Fehlermeldungen: [Anmeldung](docs/auth.md).
+Öffentlicher Einstieg ohne Konto; Registrierung mit E-Mail und Passwort, Passwort-Reset und drei Onboarding-Fragen. Details zu Konten, E-Mail-Bestätigung, Browserwechseln und Fehlermeldungen: [Anmeldung](docs/auth.md).
 
 ## Tests und Build
 

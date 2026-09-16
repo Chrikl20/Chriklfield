@@ -52,7 +52,7 @@ test('a creator preset carries editable content into the studio without starting
 test('login and photo credits are usable without a studio session', async ({ page }) => {
   await page.goto('/login');
   await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Anmeldelink senden' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Foto-Inspiration · Bildnachweise' }).click();
   await expect(page.getByRole('heading', { name: 'Bildnachweise', exact: true })).toBeVisible();
   expect(
