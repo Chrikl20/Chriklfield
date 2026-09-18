@@ -55,11 +55,9 @@ function StudioForm({ video }: { video: boolean }) {
     [count, setCount] = useState(1),
     [duration, setDuration] = useState(5),
     [audio, setAudio] = useState(false),
-    [orientation, setOrientation] = useState<'image' | 'video'>('image'),
     [source, setSource] = useState(query.get('source') || ''),
     [motion, setMotion] = useState(''),
     [version, setVersion] = useState(query.get('version') || ''),
-    [scale, setScale] = useState(1),
     [seed, setSeed] = useState(''),
     [settings, setSettings] = useState(false),
     [focused, setFocused] = useState<Asset | null>(null),
@@ -96,8 +94,6 @@ function StudioForm({ video }: { video: boolean }) {
     count,
     duration,
     audio,
-    orientation,
-    loraScale: scale,
     ...(seed ? { seed: Number(seed) } : {}),
   };
   const draftKey = `chriklfield:draft:${video ? 'video' : 'image'}:${query.toString()}`;
@@ -130,7 +126,6 @@ function StudioForm({ video }: { video: boolean }) {
     setCount(draft.count);
     setDuration(draft.duration);
     setAudio(draft.audio);
-    setOrientation(draft.orientation);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [draftKey, authenticated]);
   async function upload(file: File | undefined) {
@@ -183,7 +178,7 @@ function StudioForm({ video }: { video: boolean }) {
             {(video
               ? [
                   ['video', 'Bild animieren'],
-                  ['motion', 'Motion Control'],
+                  ['motion', 'Motion Transfer'],
                 ]
               : [
                   ['image', 'Charakter'],
@@ -227,7 +222,7 @@ function StudioForm({ video }: { video: boolean }) {
                 <option value="">Neueste fertige Version</option>
                 {versions.map((v) => (
                   <option key={v.id} value={v.id}>
-                    Version {v.version} · Krea 2
+                    Version {v.version} · Soul ID
                   </option>
                 ))}
               </select>
@@ -237,9 +232,8 @@ function StudioForm({ video }: { video: boolean }) {
             <div className="control-note">
               <ScanFace size={17} />
               <p>
-                Seedream bekommt die freigegebenen Referenzbilder dieses Charakters und übernimmt
-                ihr Format automatisch. Prüfe neue Ansichten, bevor du sie der Trainingsbasis
-                hinzufügst.
+                Higgsfield Soul nutzt eine freigegebene Referenz dieses Charakters als Bildbasis.
+                Prüfe neue Ansichten, bevor du sie als weitere Referenz freigibst.
               </p>
             </div>
           )}
@@ -310,18 +304,9 @@ function StudioForm({ video }: { video: boolean }) {
                       onChange={(e) => void upload(e.target.files?.[0])}
                     />
                   </label>
-                  <label>
-                    Ausrichtung
-                    <select
-                      value={orientation}
-                      onChange={(e) => setOrientation(e.target.value as 'image' | 'video')}
-                    >
-                      <option value="image">Wie im Bild · max. 10 Sekunden</option>
-                      <option value="video">Wie im Video · max. 30 Sekunden</option>
-                    </select>
-                  </label>
                   <p className="muted">
-                    Die serverseitig gemessene Referenzdauer bestimmt den Preis.
+                    Higgsfield Genjutsu überträgt die Bewegung aus dem Referenzvideo auf dein
+                    Startbild. Die serverseitig gemessene Referenzdauer bestimmt den Preis.
                   </p>
                 </>
               ) : (
@@ -336,14 +321,16 @@ function StudioForm({ video }: { video: boolean }) {
                   </select>
                 </label>
               )}
-              <label className="check-label">
-                <input
-                  type="checkbox"
-                  checked={audio}
-                  onChange={(e) => setAudio(e.target.checked)}
-                />
-                {model === 'motion' ? 'Originalton übernehmen' : 'Audio generieren'}
-              </label>
+              {model !== 'motion' && (
+                <label className="check-label">
+                  <input
+                    type="checkbox"
+                    checked={audio}
+                    onChange={(e) => setAudio(e.target.checked)}
+                  />
+                  Audio generieren
+                </label>
+              )}
             </>
           ) : (
             <>
@@ -413,7 +400,7 @@ function StudioForm({ video }: { video: boolean }) {
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
                 >
-                  {[1, 2, 3, 4].map((n) => (
+                  {[1, 4].map((n) => (
                     <option key={n} value={n}>
                       {n} {n === 1 ? 'Bild' : 'Bilder'}
                     </option>
@@ -438,25 +425,13 @@ function StudioForm({ video }: { video: boolean }) {
                       placeholder="Zufällig"
                     />
                   </label>
-                  {model === 'image' && (
-                    <label>
-                      LoRA-Stärke · {scale}
-                      <input
-                        type="range"
-                        min={0}
-                        max={4}
-                        step={0.1}
-                        value={scale}
-                        onChange={(e) => setScale(Number(e.target.value))}
-                      />
-                    </label>
-                  )}
+
                 </>
               )}
               <p className="muted">
                 {video
-                  ? 'Kling erhält dein Startbild, keine Bild-LoRA.'
-                  : 'Identitäts- und Körpermerkmale kommen aus der ausgewählten Charakterversion.'}
+                  ? 'Video- und Motion-Generierung laufen vollständig über die Higgsfield API.'
+                  : 'Charakterbilder verwenden die ausgewählte Higgsfield Soul ID.'}
               </p>
             </div>
           )}
@@ -464,7 +439,7 @@ function StudioForm({ video }: { video: boolean }) {
             <CostButton
               input={input}
               beforeAuth={saveDraft}
-              disabled={!prompt.trim() || uploading || (video && !source)}
+              disabled={!prompt.trim() || uploading || (video && !source) || (model === 'motion' && !motion)}
             />
             <p>
               <span className="private-dot" /> Privat gespeichert · Preis vor jedem Start
