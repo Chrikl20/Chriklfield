@@ -46,13 +46,14 @@ export async function downloadToFile(
   maxBytes: number,
   redirects = 0,
 ): Promise<void> {
-  const hosts = (
-    process.env.MEDIA_DOWNLOAD_HOSTS ||
-    'v3.fal.media,v3b.fal.media,v3c.fal.media,storage.googleapis.com'
-  ).split(',');
-  const prefixes = (process.env.MEDIA_DOWNLOAD_PATH_PREFIXES || '/files/,/falserverless/').split(
-    ',',
-  );
+  const hosts = (process.env.MEDIA_DOWNLOAD_HOSTS || 'storage.googleapis.com')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  const prefixes = (process.env.MEDIA_DOWNLOAD_PATH_PREFIXES || '/')
+    .split(',')
+    .map((prefix) => prefix.trim())
+    .filter(Boolean);
   const url = validateDownloadUrl(value, hosts, prefixes);
   requireCondition(redirects <= 3, 'TOO_MANY_REDIRECTS');
   const addresses = await lookup(url.hostname, { all: true, family: 4 });
