@@ -162,8 +162,7 @@ export function Admin() {
             </tbody>
           </table>
           <p className="empty-mini">
-            Schätzungen sind keine Rechnungsbeträge. Auch fehlgeschlagene Versuche müssen mit fal
-            abgeglichen werden.
+            Schätzungen sind keine Rechnungsbeträge. Unklare oder fehlgeschlagene Versuche werden mit Higgsfield abgeglichen.
           </p>
         </div>
       )}
@@ -176,7 +175,7 @@ export function Admin() {
               if (r?.prices) notify(JSON.stringify(r.prices));
             }}
           >
-            Aktuelle fal-Preise abrufen
+            Higgsfield-Preise prüfen
           </button>
           <div className="table-wrap">
             <table>
@@ -337,7 +336,7 @@ function PriceForm({
             value={p.unit}
             onChange={(e) => setP({ ...p, unit: e.target.value as ModelPrice['unit'] })}
           >
-            {['image', 'megapixel', 'step', 'second', 'job'].map((u) => (
+            {['image', 'second', 'job'].map((u) => (
               <option key={u}>{u}</option>
             ))}
           </select>
@@ -346,7 +345,6 @@ function PriceForm({
           [
             'unit_microusd',
             'audio_multiplier',
-            'resolution_multiplier',
             'max_parallel',
             'budget_microusd',
           ] as const
@@ -356,7 +354,6 @@ function PriceForm({
               {
                 unit_microusd: 'Preis in Mikro-USD pro Einheit',
                 audio_multiplier: 'Audio-Faktor',
-                resolution_multiplier: 'Training 1024: Preisfaktor',
                 max_parallel: 'Parallele Aufträge',
                 budget_microusd: 'Modellbudget in Mikro-USD',
               }[k]
@@ -448,7 +445,7 @@ function CostForm({
           }}
         >
           <label>
-            Bei fal eindeutig zugeordnete Request-ID
+            Bei Higgsfield eindeutig zugeordnete Request-ID
             <input required value={request} onChange={(e) => setRequest(e.target.value)} />
           </label>
           <label className="check-label">
@@ -483,8 +480,7 @@ function CostForm({
           </label>
           <label className="check-label">
             <input required type="checkbox" />
-            fal hat bestätigt, dass dieser Versuch weder angenommen noch berechnet wurde. Ein
-            Timeout oder 404 genügt nicht.
+            Higgsfield hat bestätigt, dass dieser Versuch weder angenommen noch berechnet wurde. Ein Timeout oder 404 genügt nicht.
           </label>
           <button className="button danger">Reservierung mit Beleg freigeben</button>
         </form>
