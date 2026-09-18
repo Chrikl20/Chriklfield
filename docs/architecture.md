@@ -1,63 +1,44 @@
 # Architektur
 
-Die Anwendung ist ein modularer Monolith mit zwei Laufzeiten: Next.js für Auth, Produktoberfläche und kurze API-Aufrufe; Trigger.dev für Medienverarbeitung und Wiederanlauf. PostgreSQL ist die Wahrheit für Rechte, Jobs, Kosten und Credits. Keine zusätzliche Queue-Datenbank, Redis oder öffentliche Medien-CDN.
+Chriklfield ist ein modularer Monolith mit Next.js für Web/API, Supabase als System of Record und Trigger.dev für langlebige Jobs.
 
 ```mermaid
 flowchart TD
   UI[Creator Studio] --> Web[Next.js API]
-  Web --> DB[(PostgreSQL / RLS)]
+  Web --> DB[(Supabase PostgreSQL)]
   DB --> Outbox[Transaktionale Outbox]
-  Outbox --> Worker[Trigger.dev Worker]
-  Worker --> Fal[fal Modelladapter]
-  Fal --> Hook[Signierter Callback]
-  Hook --> DB
-  Worker --> Storage[Privater Storage]
+  Outbox --> Worker[Trigger.dev]
+  Worker --> HF[Higgsfield API]
+  HF --> Worker
+  Worker --> Storage[Privater Supabase Storage]
   Stripe[Stripe] --> Web
 ```
 
-## Module
+## Provider
 
-| Pfad                   | Verantwortung                                                            |
-| ---------------------- | ------------------------------------------------------------------------ |
-| `src/domain`           | Validierung, versionierte Preislogik, Modellfähigkeiten, reine Typen     |
-| `src/server/providers` | Typisierte fal-Eingaben, Ergebnisvalidierung, Fehlerklassen, Signaturen  |
-| `src/server/media`     | Dateiinspektion, FFmpeg, Trainings-ZIP, SSRF-Schutz, private Speicherung |
-| `src/server/worker.ts` | Ein Versuch pro Job, Wiederaufnahme, Ergebnissicherung, Settlement       |
-| `src/server/billing`   | Autoritative Stripe-Prüfung und Inbox-Wiederaufnahme                     |
-| `src/trigger`          | Getrennt ausgeführte Tasks und Zeitpläne                                 |
-| `src/components`       | Zugängliche native Formulare/Dialoge, gemeinsamer Charakterzustand       |
-| `supabase/migrations`  | Tabellen, RLS, private Buckets, Sperren und serviceexklusive RPCs        |
+Higgsfield ist der einzige Modellprovider. `src/server/providers/higgsfield.ts` kapselt Authentifizierung, Eingabemapping, Statusabfrage und Ergebnisnormalisierung. Die UI kennt keine Provider-Credentials.
 
-## Identität und Versionen
+Generation ist asynchron. Ein Provider-Versuch wird vor dem kostenpflichtigen POST persistiert. Nach Annahme speichert Chriklfield die Request-ID und prüft den Status serverseitig. Bei unklarer Annahme wird nicht spekulativ ein zweiter kostenpflichtiger POST gesendet.
 
-Ein Charakter enthält einen bearbeitbaren Entwurf der bestätigten Identitäts- und Körpermerkmale. Referenzen haben Ansicht, Caption, Freigabe, Herkunft, `contain`/`cover` und Zuschnittbestätigung. Automatisch erzeugte Bilder werden nie selbständig freigegeben oder als Trainingsdaten ergänzt.
+## Charakteridentität
 
-Das Angebot friert Identität, Referenzen und Parameter ein. Beim Start prüft SQL, ob Freigaben/Captions/Zuschnitte noch übereinstimmen. Jede Training-Version erhält einen Datensatz-Snapshot, eigene Parameter, einen stabilen Triggerbegriff und später private Gewichte/Konfiguration. Der ZIP-Builder schreibt pro Bild eine Caption mit vorangestelltem Triggerbegriff, deaktiviert Auto-Captioning und bereitet den bestätigten quadratischen Zuschnitt selbst vor. Die fertige LoRA-Inferenz verwendet den Identitätsstand der trainierten Version; spätere Profiländerungen ändern alte Versionen nicht.
+Eine Character-Version speichert:
 
-## Auftragszustände
+- Snapshot von Identitäts- und Körpermerkmalen
+- Snapshot der freigegebenen Referenzen
+- Higgsfield `provider_reference_id` der Soul ID
+- Trainingsstatus und Parameter
 
-```mermaid
-stateDiagram-v2
-  [*] --> queued
-  queued --> submitting: Versuch vor POST protokolliert
-  submitting --> unknown: Annahme unklar
-  submitting --> running: Request-ID gesichert
-  unknown --> running: Webhook oder belegter Abgleich
-  running --> persisting: Ergebnis vorhanden
-  persisting --> succeeded: Alle privaten Dateien gesichert
-  queued --> failed: Vorbereitung gescheitert
-  running --> failed: Definitiver Anbieterfehler
-  unknown --> failed: Anbieter bestätigt Nichtannahme
-```
+Für Soul ID werden 20–80 bestätigte Referenzen verwendet. Fertige Versionen werden bei Charakterbildern über die gespeicherte Provider-Reference-ID wiederverwendet.
 
-Ein Worker erhält eine zehnminütige Lease. Eine vorhandene Versuchzeile verhindert jeden zweiten bezahlten POST, auch wenn der Prozess zwischen Journal-Eintrag und Request stirbt. Dieser seltene Fall bleibt bis zur verifizierten Rückmeldung oder manuellen Klärung reserviert. Ohne serverseitigen Anbieter-Idempotenzvertrag ist automatisches „genau einmal“ über die Netzwerkgrenze nicht ehrlich garantierbar; das System bevorzugt sichere Kostenbegrenzung vor automatischem Neustart.
+## Ergebnisse
 
-Deterministische Ergebnis-IDs dienen als dauerhafte Speicherbelege. Ein Neustart überspringt bereits gespeicherte Ausgaben und setzt die Verarbeitung fort. Das SQL-Settlement prüft terminalen Anbieterstatus und passende Dateien; ein Trainingsarchiv allein ist kein erfolgreiches Training.
+Provider-Ergebnisse werden nicht dauerhaft als externe URLs behandelt. Der Worker lädt freigegebene Resultate kontrolliert herunter, normalisiert die Medien und speichert sie im privaten Supabase Storage. Das Ergebnis-Asset wird erst danach als persistiert betrachtet.
 
-## Grenzen der ersten Version
+## Billing
 
-Ein automatischer privater Workspace pro Anmeldung; das Datenmodell unterstützt mehrere Mitglieder, eine Einladungsoberfläche ist noch nicht enthalten. Bibliothek lädt die jüngsten 200 Assets, Jobliste 50, Admin 100. Für grössere Archive ist cursorbasierte Pagination nachzurüsten. Das ist eine bewusst begrenzte frühe Produktversion; die gespeicherten älteren Daten gehen nicht verloren.
+Quotes verwenden serverseitig geprüfte Modellpreise. Preisstände verfallen nach sieben Tagen. Providerwechsel oder ungeprüfte Preise deaktivieren das jeweilige Modell, bis ein Admin die aktuellen Konditionen bestätigt.
 
-## Vercel-Erweiterung (7. September 2026)
+## Sicherheit
 
-`upload_intents` bildet private Dateiübertragungen unabhängig von kostenpflichtigen Modelljobs ab. Vercel stellt nach Nutzerprüfung ein Token aus; Supabase nimmt Bytes direkt an. Der Trigger-Task `media-upload` prüft/normalisiert Dateien. Eine durch Lease geschützte Transaktion veröffentlicht Asset und Fertigstatus zusammen. `recover-uploads` übernimmt Wiederanlauf und Rohdaten-Purge. Die Web-Dispatch-Schicht importiert Worker nur als TypeScript-Typ und startet keine Medienverarbeitung. [Ablauf, Speicherreservierungen und Anbietergrenzen](vercel.md).
+Supabase RLS schützt nutzerbezogene Tabellen. Interne Tabellen werden ausschließlich serverseitig verwendet. Provider-Secrets, Service-Role-Key und Stripe-Secrets dürfen nie in `NEXT_PUBLIC_*` Variablen landen.
