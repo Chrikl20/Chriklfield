@@ -38,11 +38,9 @@ function seed(): DemoState {
         id: versionId,
         character_id: characterId,
         version: 1,
-        base_model: 'krea-2',
+        base_model: 'higgsfield-soul',
         status: 'ready',
-        trigger_word: 'demoNova',
-        weights_asset_id: null,
-        config_asset_id: null,
+        provider_reference_id: 'demo-soul-id',
         identity_snapshot: 'Demo',
         body_snapshot: 'Demo',
         parameters: { demo: true },
@@ -71,12 +69,12 @@ function seed(): DemoState {
     ledger: [],
     prices: (
       [
-        ['draft', 'megapixel', 20000],
-        ['train', 'step', 10000],
-        ['image', 'megapixel', 25000],
+        ['draft', 'image', 20000],
+        ['train', 'job', 2500000],
+        ['image', 'image', 25000],
         ['edit', 'image', 40000],
         ['video', 'second', 140000],
-        ['motion', 'second', 168000],
+        ['motion', 'second', 318000],
       ] as const
     ).map(([model, unit, rate]) => ({
       model,
@@ -211,18 +209,16 @@ export function demoStart(quoteId: string, key: string) {
       const c = s.characters.find((c) => c.id === q.input.characterId);
       if (!c?.confirmed) throw new Error('IDENTITY_NOT_CONFIRMED');
       const refs = s.references.filter((r) => r.character_id === c.id);
-      if (refs.length < 8 || refs.some((r) => !r.approved || !r.crop_confirmed))
-        throw new Error('NEED_EIGHT_APPROVED_REFERENCES');
+      if (refs.length < 20 || refs.some((r) => !r.approved || !r.crop_confirmed))
+        throw new Error('NEED_TWENTY_APPROVED_REFERENCES');
       v = randomUUID();
       s.versions.unshift({
         id: v,
         character_id: c.id,
         version: 1 + s.versions.filter((v) => v.character_id === c.id).length,
-        base_model: 'krea-2',
+        base_model: 'higgsfield-soul',
         status: 'training',
-        trigger_word: 'demo' + c.name,
-        weights_asset_id: null,
-        config_asset_id: null,
+        provider_reference_id: null,
         identity_snapshot: c.identity,
         body_snapshot: c.body,
         parameters: q.input as unknown as Record<string, unknown>,
