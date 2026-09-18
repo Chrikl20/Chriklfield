@@ -25,10 +25,8 @@ import { normalizeMedia } from '@/server/media/files';
 import { BUCKET } from '@/server/media/storage';
 import { prepareUpload, completeUpload, ownedUpload } from '@/server/media/uploads';
 import { dispatchUpload, dispatchOutbox } from '@/server/dispatch';
-import { falEventSchema, verifyWebhook, verifyBinding } from '@/server/providers/webhook';
 import { checkout, portal, stripe, processStripeEvent } from '@/server/billing/stripe';
 import { adminData, adminAction } from '@/server/admin';
-import { alert } from '@/server/alerts';
 import type { Asset } from '@/domain/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -108,54 +106,6 @@ export function POST(request: Request, context: Params) {
       if (mode() === 'demo') throw new Error('WEBHOOKS_DISABLED_IN_DEMO');
       const bytes = await boundedBody(request, 2 * 1024 * 1024),
         db = adminClient();
-      if (parts[1] === 'fal') {
-        const url = new URL(request.url),
-          attempt = z.uuid().parse(url.searchParams.get('attempt'));
-        if (
-          !verifyBinding(attempt, url.searchParams.get('binding') || '') ||
-          !(await verifyWebhook(request.headers, bytes))
-        )
-          throw new Error('INVALID_WEBHOOK_SIGNATURE');
-        const event = falEventSchema.parse(JSON.parse(bytes.toString('utf8')));
-        if (event.request_id !== request.headers.get('x-fal-webhook-request-id'))
-          throw new Error('WEBHOOK_REQUEST_MISMATCH');
-        const known = check(
-          await db
-            .from('provider_attempts')
-            .select('id,job_id,request_id')
-            .eq('id', attempt)
-            .maybeSingle(),
-        );
-        if (!known || (known.request_id && known.request_id !== event.request_id))
-          throw new Error('WEBHOOK_REQUEST_MISMATCH');
-        check(
-          await db.from('webhook_inbox').upsert(
-            {
-              provider: 'fal',
-              event_id: `${event.request_id}:${event.status}`,
-              request_id: event.request_id,
-              attempt_id: attempt,
-              payload: event,
-              body_hash: createHash('sha256').update(bytes).digest('hex'),
-            },
-            { onConflict: 'provider,event_id', ignoreDuplicates: true },
-          ),
-        );
-        check(await db.rpc('accept_attempt', { p_attempt: attempt, p_request: event.request_id }));
-        const job = check(await db.from('jobs').select('status').eq('id', known.job_id).single());
-        if (['succeeded', 'failed'].includes(job.status)) {
-          if ((job.status === 'succeeded') !== (event.status === 'OK'))
-            await alert('LATE_CONFLICTING_WEBHOOK', known.job_id);
-          check(
-            await db
-              .from('webhook_inbox')
-              .update({ processed_at: new Date().toISOString() })
-              .eq('provider', 'fal')
-              .eq('event_id', `${event.request_id}:${event.status}`),
-          );
-        }
-        return json({ received: true });
-      }
       if (parts[1] === 'stripe') {
         const signature = request.headers.get('stripe-signature');
         if (!signature) throw new Error('INVALID_WEBHOOK_SIGNATURE');
