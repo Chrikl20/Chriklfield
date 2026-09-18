@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 export const jobInputSchema = z
   .object({
     model: z.enum(['draft', 'train', 'image', 'edit', 'video', 'motion']),
@@ -15,11 +16,6 @@ export const jobInputSchema = z
     count: z.number().int().min(1).max(4).default(1),
     duration: z.number().int().min(3).max(15).default(5),
     audio: z.boolean().default(false),
-    orientation: z.enum(['image', 'video']).default('image'),
-    steps: z.number().int().min(50).max(2000).default(100),
-    resolution: z.union([z.literal(768), z.literal(1024)]).default(768),
-    learningRate: z.number().min(0.000001).max(0.01).default(0.0005),
-    loraScale: z.number().min(0).max(4).default(1),
     seed: z.number().int().min(0).max(2147483647).optional(),
   })
   .strict()
@@ -36,7 +32,14 @@ export const jobInputSchema = z
         message: 'Bewegungsreferenz erforderlich.',
         path: ['motionAssetId'],
       });
+    if (['draft', 'image', 'edit'].includes(v.model) && ![1, 4].includes(v.count))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Higgsfield Soul unterstützt hier 1 oder 4 Varianten.',
+        path: ['count'],
+      });
   });
+
 export const characterSchema = z
   .object({
     name: z.string().trim().min(1).max(60),
@@ -45,6 +48,7 @@ export const characterSchema = z
     confirmed: z.boolean(),
   })
   .strict();
+
 export const referenceSchema = z
   .object({
     characterId: z.uuid(),
@@ -56,9 +60,11 @@ export const referenceSchema = z
     cropConfirmed: z.boolean(),
   })
   .strict();
+
 export function requireCondition(condition: unknown, code: string): asserts condition {
   if (!condition) throw new Error(code);
 }
+
 export const dimensions = {
   '4:5': { width: 1024, height: 1280 },
   '1:1': { width: 1024, height: 1024 },
