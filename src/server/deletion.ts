@@ -17,23 +17,6 @@ export async function purgeDeletedAssets() {
     check(await db.storage.from(BUCKET).remove([row.path]));
     check(await db.from('assets').update({ purged_at: new Date().toISOString() }).eq('id', row.id));
   }
-  // Remove stale training archives after seven days; successful LoRA weights stay private until deletion.
-  const stale = check(
-    await db
-      .from('assets')
-      .select('id,path,job_id')
-      .eq('kind', 'dataset')
-      .is('deleted_at', null)
-      .lt('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
-      .limit(50),
-  );
-  for (const a of stale) {
-    const j = check(await db.from('jobs').select('status').eq('id', a.job_id).single());
-    if (['succeeded', 'failed'].includes(j.status))
-      check(
-        await db.from('assets').update({ deleted_at: new Date().toISOString() }).eq('id', a.id),
-      );
-  }
   const requests = check(
     await db.from('deletion_requests').select('*').eq('state', 'pending').limit(50),
   );
@@ -103,7 +86,7 @@ export async function purgeDeletedAssets() {
       if (r.kind === 'character') qs = qs.eq('input->>characterId', r.target_id);
       check(await qs);
     }
-    // fal copies require provider-side payload deletion/retention review; expose an explicit handoff.
+    // Higgsfield has its own provider-side retention lifecycle; expose an explicit review handoff.
     await alert('PROVIDER_RETENTION_REVIEW', r.id);
     check(
       await db
