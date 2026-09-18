@@ -24,11 +24,9 @@
     "test:toolchain": "node scripts/check-toolchain.mjs"
   },
   "dependencies": {
-    "@fal-ai/client": "1.10.1",
     "@supabase/ssr": "0.12.6",
     "@supabase/supabase-js": "2.115.0",
     "@trigger.dev/sdk": "4.5.16",
-    "fflate": "0.8.3",
     "lucide-react": "1.41.0",
     "next": "16.3.4",
     "react": "19.2.8",
