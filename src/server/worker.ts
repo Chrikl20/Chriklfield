@@ -36,8 +36,6 @@ async function persistResult(actor: Actor, job: DurableJob, result: ProviderResu
         .update({
           provider_reference_id: result.providerReferenceId,
           base_model: 'higgsfield-soul',
-          weights_asset_id: null,
-          config_asset_id: null,
         })
         .eq('id', job.version_id)
         .eq('workspace_id', actor.workspaceId),
