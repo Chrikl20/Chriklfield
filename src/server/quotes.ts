@@ -14,7 +14,7 @@ import { assertActor } from './access';
 import { check, ownedAsset, ownedCharacter } from './repository';
 import { assertGenerationEnabled } from './config';
 import { assembledPrompt } from './providers/higgsfield';
-import { validateKlingImage, validateVideoMetadata } from './media/validation';
+import { validateGenerationImage, validateVideoMetadata } from './media/validation';
 
 export interface JobContext {
   identity: string;
@@ -58,8 +58,8 @@ export async function createQuote(actor: Actor, input: JobInput): Promise<Quote>
 
       if (input.model === 'train') {
         requireCondition(
-          refs.length >= 8 && refs.length <= 80 && refs.every((r) => r.crop_confirmed),
-          'NEED_EIGHT_APPROVED_REFERENCES',
+          refs.length >= 20 && refs.length <= 80 && refs.every((r) => r.crop_confirmed),
+          'NEED_TWENTY_APPROVED_REFERENCES',
         );
         requireCondition(
           ['face', 'profile', 'body', 'expression'].every((kind) =>
@@ -104,7 +104,7 @@ export async function createQuote(actor: Actor, input: JobInput): Promise<Quote>
   if (input.sourceAssetId) {
     const a = await add(input.sourceAssetId);
     requireCondition(a.kind === 'image', 'SOURCE_MUST_BE_IMAGE');
-    if (['video', 'motion'].includes(input.model)) validateKlingImage(a, input.model === 'motion');
+    if (['video', 'motion'].includes(input.model)) validateGenerationImage(a, input.model === 'motion');
   }
 
   let motionSeconds: number | undefined;
@@ -115,10 +115,7 @@ export async function createQuote(actor: Actor, input: JobInput): Promise<Quote>
       'MOTION_MUST_BE_VIDEO',
     );
     validateVideoMetadata({ width: video.width, height: video.height, duration: video.duration });
-    requireCondition(
-      video.duration <= (input.orientation === 'image' ? 10.05 : 30.05),
-      'MOTION_DURATION_LIMIT',
-    );
+    requireCondition(video.duration <= 30.05, 'MOTION_DURATION_LIMIT');
     motionSeconds = Math.ceil(video.duration);
   }
 
