@@ -37,10 +37,8 @@ export function appOrigins() {
 export function assertGenerationEnabled() {
   if (mode() !== 'live' || process.env.ENABLE_PAID_GENERATION !== 'true')
     throw new Error('PAID_GENERATION_DISABLED');
-  const credentials = required('HF_CREDENTIALS');
-  const separator = credentials.indexOf(':');
-  if (separator <= 0 || separator === credentials.length - 1)
-    throw new Error('HF_CREDENTIALS_INVALID');
+  required('HF_API_KEY_ID');
+  required('HF_API_KEY_SECRET');
 }
 export function isAdmin(id: string) {
   return (process.env.ADMIN_USER_IDS || '')
