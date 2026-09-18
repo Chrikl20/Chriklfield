@@ -10,8 +10,8 @@ export const studioDraftSchema = z.object({
   count: z.number().int().min(1).max(4),
   duration: z.number().int().min(3).max(15),
   audio: z.boolean(),
-  orientation: z.enum(['image', 'video']),
 });
+
 export function readStudioDraft(value: string | null, now = Date.now()) {
   try {
     const envelope = z
