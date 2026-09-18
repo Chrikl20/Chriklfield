@@ -5,16 +5,8 @@ import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { z } from 'zod';
-import { zipSync, strToU8 } from 'fflate';
-import {
-  detectMedia,
-  MAX_IMAGE_BYTES,
-  MAX_VIDEO_BYTES,
-  validateVideoMetadata,
-  safeArchiveEntry,
-} from './validation';
+import { detectMedia, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, validateVideoMetadata } from './validation';
 import { requireCondition } from '@/domain/validation';
-import type { Reference } from '@/domain/types';
 const exec = promisify(execFile);
 export async function normalizeMedia(bytes: Buffer) {
   const kind = detectMedia(bytes);
@@ -107,40 +99,4 @@ export async function normalizeMedia(bytes: Buffer) {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
-}
-export async function buildTrainingArchive(
-  refs: Reference[],
-  read: (id: string) => Promise<Buffer>,
-  resolution: 768 | 1024,
-  triggerWord: string,
-) {
-  requireCondition(refs.length >= 8 && refs.length <= 80, 'DATASET_SIZE');
-  const entries: Record<string, Uint8Array> = {};
-  let size = 0;
-  for (const [index, ref] of refs.entries()) {
-    requireCondition(
-      ref.approved && ref.crop_confirmed && ref.caption.trim(),
-      'UNAPPROVED_REFERENCE',
-    );
-    const input = await read(ref.asset_id);
-    requireCondition(
-      detectMedia(input) === 'image' && input.length <= MAX_IMAGE_BYTES,
-      'INVALID_TRAINING_IMAGE',
-    );
-    const name = index.toString().padStart(3, '0');
-    const image = await sharp(input, { limitInputPixels: 40_000_000 })
-      .rotate()
-      .resize(resolution, resolution, {
-        fit: ref.crop_mode,
-        position: 'centre',
-        background: '#dedede',
-      })
-      .jpeg({ quality: 95 })
-      .toBuffer();
-    size += image.length;
-    requireCondition(size <= 200 * 1024 * 1024, 'DATASET_TOO_LARGE');
-    entries[safeArchiveEntry(`${name}.jpg`)] = image;
-    entries[safeArchiveEntry(`${name}.txt`)] = strToU8(`${triggerWord}. ${ref.caption}`);
-  }
-  return Buffer.from(zipSync(entries, { level: 0 }));
 }
