@@ -23,9 +23,6 @@ export function Characters() {
     [reference, setReference] = useState<Asset | null>(null),
     [uploading, setUploading] = useState(false),
     [uploadPhase, setUploadPhase] = useState('Wird übertragen …'),
-    [steps, setSteps] = useState(100),
-    [resolution, setResolution] = useState<768 | 1024>(768),
-    [learningRate, setLearningRate] = useState(0.0005),
     [remove, setRemove] = useState(false);
   if (!data) return <Loading />;
   const character = data.characters.find((c) => c.id === selected),
@@ -184,7 +181,7 @@ export function Characters() {
                 <ScanFace size={20} />
                 <p>
                   <strong>Jede Referenz braucht deine Freigabe.</strong> Prüfe Ausdruck,
-                  Proportionen und quadratischen Trainingszuschnitt. Weitere KI-Ansichten findest du
+                  Proportionen und eindeutige Personenzuordnung. Weitere KI-Ansichten findest du
                   im Image Studio unter „Referenz bearbeiten“.
                 </p>
                 <Link href="/image?mode=edit" className="button compact">
@@ -193,56 +190,30 @@ export function Characters() {
               </div>
               <div className="training-panel">
                 <div>
-                  <span className="eyebrow">KREA 2 · VERSIONIERTES TRAINING</span>
-                  <h2>Eine neue Version trainieren</h2>
+                  <span className="eyebrow">HIGGSFIELD · SOUL ID</span>
+                  <h2>Eine neue Soul-ID-Version trainieren</h2>
                   <p>
-                    8–80 freigegebene Bilder. Outfit und Szene in den Bildbeschreibungen getrennt
-                    von der Identität halten.
+                    20–80 freigegebene Fotos mit derselben Person, unterschiedlichen Winkeln,
+                    Ausdrücken und Ganzkörperansichten. Chriklfield übergibt die Referenzen direkt
+                    an Higgsfield Soul ID.
                   </p>
                 </div>
                 <div className="training-options">
-                  <label>
-                    Schritte
-                    <input
-                      type="number"
-                      min={50}
-                      max={2000}
-                      step={50}
-                      value={steps}
-                      onChange={(e) => setSteps(Number(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Auflösung
-                    <select
-                      value={resolution}
-                      onChange={(e) => setResolution(Number(e.target.value) as 768 | 1024)}
-                    >
-                      <option value={768}>768 × 768</option>
-                      <option value={1024}>1024 × 1024</option>
-                    </select>
-                  </label>
-                  <label>
-                    Lernrate
-                    <input
-                      type="number"
-                      min={0.000001}
-                      max={0.01}
-                      step={0.0001}
-                      value={learningRate}
-                      onChange={(e) => setLearningRate(Number(e.target.value))}
-                    />
-                  </label>
+                  <div className="control-note">
+                    <ScanFace size={17} />
+                    <p>
+                      {refs.filter((r) => r.approved && r.crop_confirmed).length} / 20
+                      Mindest-Referenzen freigegeben.
+                    </p>
+                  </div>
                   <CostButton
-                    label="Training vorbereiten"
-                    input={{
-                      model: 'train',
-                      characterId: selected,
-                      steps,
-                      resolution,
-                      learningRate,
-                    }}
-                    disabled={!character.confirmed || uploading}
+                    label="Soul ID trainieren"
+                    input={{ model: 'train', characterId: selected }}
+                    disabled={
+                      !character.confirmed ||
+                      uploading ||
+                      refs.filter((r) => r.approved && r.crop_confirmed).length < 20
+                    }
                   />
                 </div>
               </div>
@@ -308,7 +279,7 @@ export function Characters() {
       {remove && character && (
         <Modal title={`${character.name} löschen?`} onClose={() => setRemove(false)}>
           <p>
-            Referenzen, private Gewichte und zugehörige Ergebnisse werden zur Löschung vorgemerkt.
+            Referenzen, Soul-ID-Verknüpfung und zugehörige Ergebnisse werden zur Löschung vorgemerkt.
             Laufende Aufträge müssen zuerst abgeschlossen sein.
           </p>
           <div className="modal-actions">
