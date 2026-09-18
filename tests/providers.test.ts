@@ -27,18 +27,18 @@ describe('Higgsfield provider adapter and pricing boundaries', () => {
       }),
       context,
       {
-        referenceUrls: [
-          'https://example.test/one.jpg',
-          'https://example.test/two.jpg',
-        ],
+        referenceUrls: Array.from(
+          { length: 20 },
+          (_, i) => `https://example.test/reference-${i + 1}.jpg`,
+        ),
       },
     );
     expect(p).toEqual({
       name: 'Nova',
-      input_images: [
-        { type: 'image_url', image_url: 'https://example.test/one.jpg' },
-        { type: 'image_url', image_url: 'https://example.test/two.jpg' },
-      ],
+      input_images: Array.from({ length: 20 }, (_, i) => ({
+        type: 'image_url',
+        image_url: `https://example.test/reference-${i + 1}.jpg`,
+      })),
     });
   });
 
@@ -61,7 +61,8 @@ describe('Higgsfield provider adapter and pricing boundaries', () => {
   });
 
   it('does not repeat an ambiguous paid submit', async () => {
-    vi.stubEnv('HF_CREDENTIALS', 'key:secret');
+    vi.stubEnv('HF_API_KEY_ID', 'key');
+    vi.stubEnv('HF_API_KEY_SECRET', 'secret');
     const transport = vi.fn().mockRejectedValue(new DOMException('timeout', 'TimeoutError'));
     const provider = new HiggsfieldProvider(transport);
     await expect(
