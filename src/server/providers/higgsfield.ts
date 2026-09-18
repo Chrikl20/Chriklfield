@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { MODELS, ERROR_MAP } from '@/domain/models';
 import type { JobInput, ModelKey } from '@/domain/types';
 import type { JobContext } from '../quotes';
@@ -38,15 +37,14 @@ type KlingVideoInput = {
   multi_shots: boolean;
 };
 
-type KlingMotionInput = {
+type GenjutsuMotionInput = {
   prompt: string;
-  image_url: string;
   video_url: string;
-  character_orientation: 'image' | 'video';
-  keep_original_sound: 'yes' | 'no';
+  image_urls: string[];
+  resolution: '720p';
 };
 
-export type ProviderInput = SoulInput | SoulIdInput | KlingVideoInput | KlingMotionInput;
+export type ProviderInput = SoulInput | SoulIdInput | KlingVideoInput | GenjutsuMotionInput;
 
 export interface ProviderResult {
   files: { url: string; kind: 'image' | 'video'; mime: string }[];
@@ -101,13 +99,19 @@ export function buildProviderInput(
   files: ProviderFiles,
 ): ProviderInput {
   const prompt = assembledPrompt(input, context);
+
   switch (input.model) {
     case 'train':
-      if (!files.referenceUrls?.length) throw new Error('REFERENCES_MISSING');
+      if (!files.referenceUrls || files.referenceUrls.length < 20)
+        throw new Error('SOUL_ID_REFERENCES_MISSING');
       return {
         name: context.characterName || 'Chriklfield Character',
-        input_images: files.referenceUrls.map((image_url) => ({ type: 'image_url' as const, image_url })),
+        input_images: files.referenceUrls.map((image_url) => ({
+          type: 'image_url' as const,
+          image_url,
+        })),
       };
+
     case 'draft':
       return {
         prompt,
@@ -116,6 +120,7 @@ export function buildProviderInput(
         batch_size: soulBatch(input.count),
         ...(input.seed === undefined ? {} : { seed: input.seed }),
       };
+
     case 'image':
       if (!files.providerReferenceId) throw new Error('SOUL_ID_MISSING');
       return {
@@ -127,6 +132,7 @@ export function buildProviderInput(
         custom_reference_strength: 1,
         ...(input.seed === undefined ? {} : { seed: input.seed }),
       };
+
     case 'edit':
       if (!files.referenceUrls?.[0]) throw new Error('REFERENCES_MISSING');
       return {
@@ -137,6 +143,7 @@ export function buildProviderInput(
         image_reference: { type: 'image_url', image_url: files.referenceUrls[0] },
         ...(input.seed === undefined ? {} : { seed: input.seed }),
       };
+
     case 'video':
       if (!files.sourceUrl) throw new Error('SOURCE_MISSING');
       return {
@@ -147,14 +154,14 @@ export function buildProviderInput(
         cfg_scale: 0.5,
         multi_shots: false,
       };
+
     case 'motion':
       if (!files.sourceUrl || !files.motionUrl) throw new Error('MOTION_SOURCE_MISSING');
       return {
         prompt: input.prompt,
-        image_url: files.sourceUrl,
         video_url: files.motionUrl,
-        character_orientation: input.orientation,
-        keep_original_sound: input.audio ? 'yes' : 'no',
+        image_urls: [files.sourceUrl],
+        resolution: '720p',
       };
   }
 }
@@ -168,10 +175,9 @@ function record(value: unknown): JsonRecord {
 }
 
 function credentials() {
-  const raw = required('HF_CREDENTIALS');
-  const split = raw.indexOf(':');
-  if (split <= 0 || split === raw.length - 1) throw new Error('HF_CREDENTIALS_INVALID');
-  return { raw, key: raw.slice(0, split), secret: raw.slice(split + 1) };
+  const key = required('HF_API_KEY_ID');
+  const secret = required('HF_API_KEY_SECRET');
+  return { key, secret, joined: `${key}:${secret}` };
 }
 
 function legacyHeaders() {
@@ -183,9 +189,9 @@ function legacyHeaders() {
   };
 }
 
-function v2Headers() {
+function currentHeaders() {
   return {
-    Authorization: `Key ${credentials().raw}`,
+    Authorization: `Key ${credentials().joined}`,
     'Content-Type': 'application/json',
   };
 }
@@ -214,7 +220,7 @@ async function send(
   try {
     response = await transport(`${BASE_URL}${path}`, {
       method,
-      headers: init.legacy ? legacyHeaders() : v2Headers(),
+      headers: init.legacy ? legacyHeaders() : currentHeaders(),
       ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       signal: AbortSignal.timeout(method === 'POST' ? 30000 : 20000),
       redirect: 'error',
@@ -223,6 +229,7 @@ async function send(
     if (method === 'POST') throw new ProviderUnknown();
     throw new Error('PROVIDER_STATUS_UNAVAILABLE');
   }
+
   const body = await readJson(response);
   if (!response.ok) {
     if (method === 'POST' && [400, 401, 402, 403, 422, 429].includes(response.status))
@@ -236,7 +243,8 @@ function legacyJobStatus(data: unknown) {
   const jobs = record(data).jobs;
   if (!Array.isArray(jobs) || jobs.length === 0) return 'unknown' as const;
   const statuses = jobs.map((job) => String(record(job).status || 'unknown'));
-  if (statuses.some((s) => s === 'failed' || s === 'nsfw' || s === 'canceled')) return 'failed' as const;
+  if (statuses.some((s) => s === 'failed' || s === 'nsfw' || s === 'canceled'))
+    return 'failed' as const;
   if (statuses.every((s) => s === 'completed')) return 'completed' as const;
   return 'running' as const;
 }
@@ -257,24 +265,30 @@ export class HiggsfieldProvider implements Provider {
 
   async submit(model: ModelKey, input: ProviderInput) {
     if (model === 'train') {
-      const data = record(await send(this.transport, 'POST', '/v1/custom-references', {
-        legacy: true,
-        body: input,
-      }));
+      const data = record(
+        await send(this.transport, 'POST', '/v1/custom-references', {
+          legacy: true,
+          body: input,
+        }),
+      );
       if (typeof data.id !== 'string' || !data.id) throw new ProviderUnknown();
       return data.id;
     }
+
     if (['draft', 'image', 'edit'].includes(model)) {
-      const data = record(await send(this.transport, 'POST', '/v1/text2image/soul', {
-        legacy: true,
-        body: { params: input },
-      }));
+      const data = record(
+        await send(this.transport, 'POST', '/v1/text2image/soul', {
+          legacy: true,
+          body: { params: input },
+        }),
+      );
       if (typeof data.id !== 'string' || !data.id) throw new ProviderUnknown();
       return data.id;
     }
-    const data = record(await send(this.transport, 'POST', `/${MODELS[model].endpoint}`, {
-      body: input,
-    }));
+
+    const data = record(
+      await send(this.transport, 'POST', `/${MODELS[model].endpoint}`, { body: input }),
+    );
     if (typeof data.request_id !== 'string' || !data.request_id) throw new ProviderUnknown();
     return data.request_id;
   }
@@ -283,15 +297,19 @@ export class HiggsfieldProvider implements Provider {
     try {
       if (model === 'train') {
         const data = record(
-          await send(this.transport, 'GET', `/v1/custom-references/${encodeURIComponent(requestId)}`, {
-            legacy: true,
-          }),
+          await send(
+            this.transport,
+            'GET',
+            `/v1/custom-references/${encodeURIComponent(requestId)}`,
+            { legacy: true },
+          ),
         );
         const status = String(data.status || 'unknown');
         if (status === 'completed') return 'completed';
         if (status === 'failed') return 'failed';
         return ['not_ready', 'queued', 'in_progress'].includes(status) ? 'running' : 'unknown';
       }
+
       if (['draft', 'image', 'edit'].includes(model)) {
         return legacyJobStatus(
           await send(this.transport, 'GET', `/v1/job-sets/${encodeURIComponent(requestId)}`, {
@@ -299,6 +317,7 @@ export class HiggsfieldProvider implements Provider {
           }),
         );
       }
+
       const data = record(
         await send(this.transport, 'GET', `/requests/${encodeURIComponent(requestId)}/status`),
       );
@@ -315,15 +334,19 @@ export class HiggsfieldProvider implements Provider {
   async result(model: ModelKey, requestId: string): Promise<ProviderResult> {
     if (model === 'train') {
       const data = record(
-        await send(this.transport, 'GET', `/v1/custom-references/${encodeURIComponent(requestId)}`, {
-          legacy: true,
-        }),
+        await send(
+          this.transport,
+          'GET',
+          `/v1/custom-references/${encodeURIComponent(requestId)}`,
+          { legacy: true },
+        ),
       );
       if (String(data.status) === 'failed')
         throw new ProviderRejected('PROVIDER_GENERATION_FAILED', true);
       if (String(data.status) !== 'completed') throw new Error('PROVIDER_RESULT_NOT_READY');
       return { files: [], providerReferenceId: requestId };
     }
+
     if (['draft', 'image', 'edit'].includes(model)) {
       const data = await send(
         this.transport,
@@ -336,6 +359,7 @@ export class HiggsfieldProvider implements Provider {
       if (status !== 'completed') throw new Error('PROVIDER_RESULT_NOT_READY');
       return { files: legacyFiles(data) };
     }
+
     const data = record(
       await send(this.transport, 'GET', `/requests/${encodeURIComponent(requestId)}/status`),
     );
@@ -346,9 +370,11 @@ export class HiggsfieldProvider implements Provider {
         true,
       );
     if (status !== 'completed') throw new Error('PROVIDER_RESULT_NOT_READY');
+
     const video = record(data.video).url;
     if (typeof video === 'string')
       return { files: [{ url: video, kind: 'video', mime: 'video/mp4' }] };
+
     const images = Array.isArray(data.images)
       ? data.images.flatMap((item) => {
           const url = record(item).url;
