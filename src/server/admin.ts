@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { adminClient } from './database';
 import { check } from './repository';
 import { assertActor } from './access';
-import { fetchFalPrices, FalProvider } from './providers/fal';
+import { HiggsfieldProvider } from './providers/higgsfield';
 export async function adminData(actor: Actor) {
   await assertActor(actor);
   if (!actor.admin) throw new Error('FORBIDDEN');
@@ -36,7 +36,8 @@ export async function adminAction(actor: Actor, raw: unknown) {
   if (!actor.admin) throw new Error('FORBIDDEN');
   const action = z.object({ action: z.string(), data: z.unknown() }).parse(raw);
   const db = adminClient();
-  if (action.action === 'fetch-prices') return { prices: await fetchFalPrices() };
+  if (action.action === 'fetch-prices')
+    return { prices: [], provider: 'higgsfield', note: 'Use the reviewed Higgsfield console price for each enabled model.' };
   if (action.action === 'price') {
     const p = z
       .object({
@@ -116,7 +117,7 @@ export async function adminAction(actor: Actor, raw: unknown) {
     if (a.request_id || !['unknown', 'submitting'].includes(a.state))
       throw new Error('ATTEMPT_NOT_UNKNOWN');
     const j = check(await db.from('jobs').select('model').eq('id', a.job_id).single());
-    if ((await new FalProvider().status(j.model, p.requestId)) === 'unknown')
+    if ((await new HiggsfieldProvider().status(j.model, p.requestId)) === 'unknown')
       throw new Error('PROVIDER_REQUEST_NOT_VERIFIED');
     check(await db.rpc('accept_attempt', { p_attempt: p.attemptId, p_request: p.requestId }));
     check(
