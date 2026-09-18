@@ -37,11 +37,10 @@ export function appOrigins() {
 export function assertGenerationEnabled() {
   if (mode() !== 'live' || process.env.ENABLE_PAID_GENERATION !== 'true')
     throw new Error('PAID_GENERATION_DISABLED');
-  required('FAL_KEY');
-  required('FAL_WEBHOOK_USER_ID');
-  if (required('FAL_WEBHOOK_BINDING_SECRET').length < 32)
-    throw new Error('WEBHOOK_SECRET_TOO_SHORT');
-  if (!appUrl().startsWith('https://')) throw new Error('HTTPS_WEBHOOK_REQUIRED');
+  const credentials = required('HF_CREDENTIALS');
+  const separator = credentials.indexOf(':');
+  if (separator <= 0 || separator === credentials.length - 1)
+    throw new Error('HF_CREDENTIALS_INVALID');
 }
 export function isAdmin(id: string) {
   return (process.env.ADMIN_USER_IDS || '')
